@@ -10,16 +10,18 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-class fire_analysis(object):
+class fire_analysis_parameters(object):
     """
     fire_sim class
     
     Parameters
     ----------
-    wn - water network model object
-    
-    
-
+    fire_flow_demand - Firefighting flow requirement
+    fire_start - simtime at which the fire demand starts
+    fire_stop - simtime at which the fire demand starts
+    p_thresh - minumum acceptable pressure
+    p_nom - nominal pressure value for PDD
+    demand_mult - demand multiplier for extra demand
     """
     def __init__(self, fire_flow_demand = 1500, fire_start = '24:00:00', fire_stop = '26:00:00',\
     p_thresh = 14.06, p_nom = 17.57, demand_mult = 1):
@@ -83,10 +85,11 @@ def PDDinitialize(wn, duration, p_thresh = 14.06, nom_press = 17.57, demand_mult
         node.minimum_pressure = p_thresh
 
 def fire_node_sim(wn, node_name, fire_parameters):
-
 #initialize water network for PDD simulation   
     PDDinitialize(wn, fire_parameters.fire_stop, p_thresh = fire_parameters.p_thresh, \
     nom_press = fire_parameters.p_nom, demand_mult = fire_parameters.demand_mult)
+### Check that node exists in node names
+### Check the node is not a tank or reservoir
 
 #add firefighting demand pattern to the desired node
     fire_flow_demand = fire_parameters.fire_flow_demand / (60*264.17) #convert from gpm to m3/s
@@ -99,7 +102,6 @@ def fire_node_sim(wn, node_name, fire_parameters):
 #run sim and return results    
     sim = wntr.sim.WNTRSimulator(wn, mode = 'PDD')
     results = sim.run_sim(solver_options = {'MAXITER' :500})
-
     return results
             
 def fire_node_criticality(wn, fire_nodes, fire_parameters, hdf_output = False, hdf_file = "fire_criticality.hdf"):
