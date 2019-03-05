@@ -13,6 +13,10 @@ try:
     import plotly
 except:
     plotly = None
+try:
+    import folium
+except:
+    folium = None
     
 from wntr.graphics.color import custom_colormap
 
@@ -184,6 +188,7 @@ def plot_network(wn, node_attribute=None, link_attribute=None, title=None,
         
     edge_background = nx.draw_networkx_edges(G, pos, edge_color='grey', 
                                              width=0.5, ax=ax)
+    
     nodes = nx.draw_networkx_nodes(G, pos, with_labels=False, 
             nodelist=nodelist, node_color=nodecolor, node_size=node_size, 
             cmap=node_cmap, vmin=node_range[0], vmax = node_range[1], 
@@ -213,7 +218,7 @@ def plot_interactive_network(wn, node_attribute=None, title=None,
                link_width=1, add_colorbar=True, reverse_colormap=False,
                figsize=[700, 450], round_ndigits=2, filename=None, auto_open=True):
     """
-    Create an interactive scalable network graphic using networkx and plotly.  
+    Create an interactive scalable network graphic using plotly.  
 
     Parameters
     ----------
@@ -376,3 +381,202 @@ def plot_interactive_network(wn, node_attribute=None, title=None,
         plotly.offline.plot(fig, filename=filename, auto_open=auto_open)  
     else:
         plotly.offline.plot(fig, auto_open=auto_open)  
+
+def plot_leaflet_network(wn, node_attribute=None, link_attribute=None, 
+               node_size=2, node_range=[None,None], 
+               node_cmap=['cornflowerblue', 'forestgreen', 'gold', 'firebrick'], 
+               node_cmap_bins = 'cut', node_labels=True,
+               link_width=2, link_range=[None,None], 
+               link_cmap=['cornflowerblue', 'forestgreen', 'gold', 'firebrick'], 
+               link_cmap_bins = 'cut', link_labels=True,
+               add_legend=False, node_legend_title = 'Node Legend', 
+               link_legend_title = 'Link Legend', round_ndigits=2, zoom_start=13, 
+               add_latlong_popup=False, filename='folium.html'):
+    """
+    Create an interactive scalable network graphic on a Leaflet map using folium.  
+
+    Parameters
+    ----------
+    wn : wntr WaterNetworkModel
+        A WaterNetworkModel object
+
+    node_attribute : str, list, pd.Series, or dict, optional
+        (default = None)
+
+        - If node_attribute is a string, then a node attribute dictionary is
+          created using node_attribute = wn.query_node_attribute(str)
+        - If node_attribute is a list, then each node in the list is given a 
+          value of 1.
+        - If node_attribute is a pd.Series, then it should be in the format
+          {nodeid: x} where nodeid is a string and x is a float. 
+        - If node_attribute is a dict, then it should be in the format
+          {nodeid: x} where nodeid is a string and x is a float
+
+    link_attribute : str, list, pd.Series, or dict, optional
+        (default = None)
+
+        - If link_attribute is a string, then a link attribute dictionary is
+          created using edge_attribute = wn.query_link_attribute(str)
+        - If link_attribute is a list, then each link in the list is given a 
+          value of 1.
+        - If link_attribute is a pd.Series, then it should be in the format
+          {linkid: x} where linkid is a string and x is a float. 
+        - If link_attribute is a dict, then it should be in the format
+          {linkid: x} where linkid is a string and x is a float.
+
+    node_size : int, optional
+        Node size (default = 10)
+
+    node_range : list, optional
+        Node range (default = [None,None], autoscale)
+
+    node_cmap : list of color names, optional
+        Node colors 
+    
+    node_cmap_bins: string, optional
+        Node color bins, 'cut' or 'qcut'
+    
+    node_labels: bool, optional
+        If True, the graph will include each node labelled with its name. 
+        (default = False)
+        
+    link_width : int, optional
+        Link width (default = 1)
+
+    link_range : list, optional
+        Link range (default = [None,None], autoscale)
+
+    link_cmap : list of color names, optional
+        Link colors
+    
+    link_cmap_bins: string, optional
+        Link color bins, 'cut' or 'qcut'
+        
+    link_labels: bool, optional
+        If True, the graph will include each link labelled with its name. 
+        (default = False)
+
+    """
+    if folium is None:
+        raise ImportError('folium is required')
+    
+    if node_attribute is not None:
+        if isinstance(node_attribute, list):
+            node_cmap=['red']
+        node_attribute = _format_node_attribute(node_attribute, wn)
+        node_attribute = pd.Series(node_attribute)
+        if node_range[0] is not None:
+            node_attribute[node_attribute < node_range[0]] = node_range[0]
+        if node_range[1] is not None:
+            node_attribute[node_attribute > node_range[1]] = node_range[1]
+        if node_cmap_bins == 'cut':
+            node_colors, node_bins = pd.cut(node_attribute, len(node_cmap), 
+                                                labels=node_cmap, retbins =True)
+        elif node_cmap_bins == 'qcut':
+            node_colors, node_bins = pd.qcut(node_attribute, len(node_cmap), 
+                                                 labels=node_cmap, retbins =True)
+        
+    if link_attribute is not None:
+        if isinstance(link_attribute, list):
+            link_cmap=['red']
+        link_attribute = _format_link_attribute(link_attribute, wn)
+        link_attribute = pd.Series(link_attribute)
+        if link_range[0] is not None:
+            link_attribute[link_attribute < link_range[0]] = link_range[0]
+        if link_range[1] is not None:
+            link_attribute[link_attribute > link_range[1]] = link_range[1]
+        if link_cmap_bins == 'cut':
+            link_colors, link_bins  = pd.cut(link_attribute, len(link_cmap), 
+                                             labels=link_cmap, retbins =True)
+        elif link_cmap_bins == 'qcut':
+            link_colors, link_bins  = pd.qcut(link_attribute, len(link_cmap), 
+                                              labels=link_cmap, retbins =True)
+        
+    G = wn.get_graph()
+    pos = nx.get_node_attributes(G,'pos')
+    center = pd.DataFrame(pos).mean(axis=1)
+    
+    m = folium.Map(location=[center.iloc[0], center.iloc[1]], zoom_start=zoom_start)
+    folium.TileLayer('cartodbpositron').add_to(m)
+    
+    if node_size > 0:
+        for name, node in wn.nodes():
+            loc = (node.coordinates[0], node.coordinates[1])
+            radius = node_size
+            color = 'black'
+            if node_labels:
+                popup = node.node_type + ': ' + name
+            else:
+                popup = None
+                    
+            if node_attribute is not None:
+                if name in node_attribute.index:
+                    color = node_colors[name]
+                    if node_labels:
+                        popup = node.node_type + ' ' + name + ', ' + \
+                                '{:.{prec}f}'.format(node_attribute[name], prec=round_ndigits)
+                else:
+                    radius = 0.1
+            
+            folium.CircleMarker(loc, popup=popup, color=color, fill=True, 
+                                fill_color=color, radius=radius, fill_opacity=0.7, opacity=0.7).add_to(m)
+            
+    if link_width > 0:
+        for name, link in wn.links():            
+            start_loc = (link.start_node.coordinates[0], link.start_node.coordinates[1])
+            end_loc = (link.end_node.coordinates[0], link.end_node.coordinates[1])
+            weight = link_width
+            color='black'
+            if link_labels:
+                popup = link.link_type + ': ' + name
+            else:
+                popup = None
+            
+            if link_attribute is not None:
+                if name in link_attribute.index:
+                    color = link_colors[name]
+                    if link_labels:
+                        popup = link.link_type + ' ' + name + ', ' + \
+                            '{:.{prec}f}'.format(link_attribute[name], prec=round_ndigits)
+                else:
+                    weight = 1.5
+            
+            folium.PolyLine([start_loc, end_loc], popup=popup, color=color, 
+                            weight=weight, opacity=0.7).add_to(m)
+    
+    if (add_legend) & ((len(node_cmap) >= 1) or (len(link_cmap) >= 1)):
+        if node_attribute is not None:  #Produce node legend
+            height = 50+len(node_cmap)*20 + (int(len(node_legend_title)/20) + 1)*20
+            node_legend_html = """<div style="position: fixed; 
+        bottom: 50px; left: 50px; width: 150px; height: """+str(height)+"""px; 
+        background-color:white;z-index:9999; font-size:14px; "><br>
+            <b><P ALIGN=CENTER>""" + node_legend_title + """</b> </P>"""
+            for color, val in zip(node_cmap, node_bins[0:-1]):
+                val = '{:.{prec}f}'.format(val, prec=round_ndigits)
+                node_legend_html += """
+                &emsp;<i class="fa fa-circle fa-1x" 
+                style="color:"""+ color +""" "></i> >= """+ val +""" <br>"""
+            node_legend_html += """</div>"""
+            m.get_root().html.add_child(folium.Element(node_legend_html))
+			
+        if link_attribute is not None:   #Produce link legend
+            height = 50+len(link_cmap)*20 + (int(len(link_legend_title)/20) + 1)*20
+            link_legend_html = """<div style="position: fixed; 
+			bottom: 50px; left: 250px; width: 150px; height: """+str(height)+"""px; 
+			background-color:white;z-index:9999; font-size:14px; "><br>
+            <b><P ALIGN=CENTER>""" + link_legend_title + """</b> </P>"""
+            for color, val in zip(link_cmap, link_bins[0:-1]):
+                val = '{:.{prec}f}'.format(val, prec=round_ndigits)
+                link_legend_html += """
+               &emsp;<i class="fa fa-minus fa-1x" 
+                style="color:"""+ color +""" "></i> >= """+ val +""" <br>"""
+            link_legend_html += """</div>"""
+            m.get_root().html.add_child(folium.Element(link_legend_html))
+    
+    #plugins.Search(points, search_zoom=20, ).add_to(m)
+    if add_latlong_popup:
+        m.add_child(folium.LatLngPopup())
+    folium.LayerControl().add_to(m)
+    
+    m.save(filename)
+ 

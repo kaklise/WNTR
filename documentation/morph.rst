@@ -153,6 +153,7 @@ Pressure differences are generally less than 5% in this example.
    
    Pressure differences between the original and skeletonized Net6.
 
+.. _modify_node_coords:
 
 Modify node coordinates
 ----------------------------
@@ -171,6 +172,17 @@ WNTR includes several functions to modify node coordinates, denoted as :math:`(x
    
    .. math:: (x, y) = \begin{bmatrix} cos(\theta) & -sin(\theta) \\sin(\theta) & cos(\theta) \end{bmatrix} \boldsymbol{\cdot} (x, y)
 
+4. :class:`~wntr.morph.node.convert_node_coordinates_UTM_to_latlong` and :class:`~wntr.morph.node.convert_node_coordinates_latlong_to_UTM` 
+   which converts node coordinates from UTM to latitude/longitude or visa-versa.  
+   **These functions require the Python package utm, which is an optional dependency of WNTR.**  
+   
+5. :class:`~wntr.morph.node.convert_node_coordinates_to_UTM` and :class:`~wntr.morph.node.convert_node_coordinates_to_latlong` 
+   which converts node coordinates from arbitrary distance units directly into UTM or latitude/longitude. 
+   **These functions require the Python package utm, which is an optional dependency of WNTR.**    
+   The user supplies the names of two nodes in their network along with their
+   UTM or latitude/longitude coordinates.  Ideally, these nodes span a decent range of the network (for example, 
+   the nodes could be in the upper right and lower left).
+
 The following example returns a copy of the water network model with 
 node coordinates scaled by 100 m.
 
@@ -188,6 +200,13 @@ node coordinates scaled by 100 m.
 .. doctest::
 
     >>> wn_scaled_coord = wntr.morph.scale_node_coordinates(wn, 100)
+
+The next example converts node coordinates to latitude/longitude.
+
+.. doctest::
+
+    >>> latlong_map = {'Lake':(35.0623, -106.6587), '219': (35.1918, -106.5248)}
+    >>> wn_latlong = wntr.morph.convert_node_coordinates_to_latlong(wn, latlong_map) # doctest: +SKIP
 
 .. _split_break_pipes:
 
