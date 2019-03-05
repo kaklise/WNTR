@@ -88,8 +88,12 @@ def fire_node_sim(wn, node_name, fire_parameters):
 #initialize water network for PDD simulation   
     PDDinitialize(wn, fire_parameters.fire_stop, p_thresh = fire_parameters.p_thresh, \
     nom_press = fire_parameters.p_nom, demand_mult = fire_parameters.demand_mult)
-### Check that node exists in node names
-### Check the node is not a tank or reservoir
+# Check that node exists in node names
+    if not node_name in wn.node_name_list:
+        raise Exception("The given node name is not in the wn.node_name_list.")
+#Check the node is not a tank or reservoir        
+    elif node_name in (wn.tank_name_list + wn.reservoir_name_list):
+        raise Exception("The given node name is a tank or reservoir.")
 
 #add firefighting demand pattern to the desired node
     fire_flow_demand = fire_parameters.fire_flow_demand / (60*264.17) #convert from gpm to m3/s

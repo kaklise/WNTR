@@ -6,9 +6,10 @@ Created on Tue Feb 26 15:45:18 2019
 """
 
 #from nose.tools import *
+import unittest
 import unittest.mock
 from os.path import abspath, dirname, join
-
+import pandas as pd
 
 
 testdir = dirname(abspath(str(__file__)))
@@ -46,12 +47,41 @@ class TestFireMethods(unittest.TestCase):
                  p_nom = 17.57,
                  demand_mult = 1
                  )        
-        #node = a_node
-        #results = wntr.analysis.fire_node_sim(self.wn, node, fire_params)
-        print (mock_fire_params)
-        pass
-
-
+        node_choice = '159' #arbitrary selection
+        results = self.wntr.analysis.fire_node_sim(self.wn, node_choice, mock_fire_params)
+        node = self.wn.get_node(node_choice)
+        
+        wn2 = self.wntr.network.WaterNetworkModel(join(netdir, 'net3.inp'))
+        
+        '''
+        node.demand_timeseries_list.remove_category('fire')#remove added demands    
+        self.wn.reset_initial_values()        
+        self.wn = self.wntr.network.WaterNetworkModel(self.wn.inpfile_name)
+        '''
+#initialize water network for PDD simulation    
+        wn2.options.time.duration = 26 * 3600
+        wn2.options.hydraulic.demand_multiplier = 1
+        for name, node in wn2.nodes():
+            node.nominal_pressure = 17.57
+            node.minimum_pressure = 14.06
+            
+#add firefighting demand pattern to the desired node
+        fire_flow_demand = 1500 / (60*264.17) #convert from gpm to m3/s
+        fire_flow_pattern = self.wntr.network.elements.Pattern.binary_pattern('fire_flow', 24*3600, 26*3600, 
+                            wn2.options.time.pattern_timestep, duration = 26*3600)
+        wn2.add_pattern('fire_flow', fire_flow_pattern)
+        node = wn2.get_node(node_choice)
+        node.add_demand(fire_flow_demand, fire_flow_pattern, category = 'fire')
+    
+#run sim and return results    
+        sim = self.wntr.sim.WNTRSimulator(wn2, mode = 'PDD')
+        expected_results = sim.run_sim(solver_options = {'MAXITER' :500})
+        results = vars(results)
+        expected_results = vars(expected_results)
+#compare results
+        self.assertDictEqual(results, expected_results,
+        "Sim results for fire_node_sim do not match expected values")        
+        
 if __name__ == '__main__':
     unittest.main()
      
