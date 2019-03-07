@@ -8,7 +8,6 @@ Created on Mon Feb 11 15:47:29 2019
 import wntr
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 class fire_analysis_parameters(object):
     """
@@ -61,14 +60,20 @@ def _parse_value(value):
             v += PM
         return v
 
-def totalWSA(wn, results, start, stop):
-#calculate total demand for all junctions over the requested time period
-    demand = 0 
-    for junc in wn.junction_name_list:
-        demand += sum(results.node['demand'].loc[_parse_value(start):_parse_value(stop),junc])
+def totalWSA(wn, results, start, stop, junctions = 'all'):
+#handle a single junction, subset, or all junctions
+    if junctions == 'all':
+        junctions = wn.junction_name_list
+
+#calculate total demand for junctions of interest over the requested time period
+    demand = 0
+    for junc in junctions:
+        demand += sum(results.node['demand'].loc[_parse_value(start):_parse_value(stop), junc])
     print("actual demand\n", demand )
-#calculate total expected demand for all junctions over the requested time period
-    exp_demand = sum(wntr.metrics.expected_demand(wn).loc[_parse_value(start):_parse_value(stop),:].sum())
+#calculate total expected demand for junctions of interest over the requested time period
+    exp_demand = 0
+    for junc in junctions:
+        exp_demand += sum(wntr.metrics.expected_demand(wn).loc[_parse_value(start):_parse_value(stop),junc])
     print("expected demand\n", exp_demand )
 #calculate total WSA
     total_wsa = demand/exp_demand
@@ -91,10 +96,7 @@ def fire_node_sim(wn, node_name, fire_parameters):
 # Check that node exists in node names
     if not node_name in wn.node_name_list:
         raise Exception("The given node name is not in the wn.node_name_list.")
-#Check the node is not a tank or reservoir        
-    elif node_name in (wn.tank_name_list + wn.reservoir_name_list):
-        raise Exception("The given node name is a tank or reservoir.")
-
+        return
 #add firefighting demand pattern to the desired node
     fire_flow_demand = fire_parameters.fire_flow_demand / (60*264.17) #convert from gpm to m3/s
     fire_flow_pattern = wntr.network.elements.Pattern.binary_pattern('fire_flow',_parse_value(fire_parameters.fire_start),\
@@ -102,7 +104,6 @@ def fire_node_sim(wn, node_name, fire_parameters):
     wn.add_pattern('fire_flow', fire_flow_pattern)
     node = wn.get_node(node_name)
     node.add_demand(fire_flow_demand, fire_flow_pattern, category = 'fire')
-    
 #run sim and return results    
     sim = wntr.sim.WNTRSimulator(wn, mode = 'PDD')
     results = sim.run_sim(solver_options = {'MAXITER' :500})
@@ -113,21 +114,24 @@ def fire_node_criticality(wn, fire_nodes, fire_parameters, hdf_output = False, h
     summary = {}
 #run sim for all fire nodes and record results
     for node_name in fire_nodes:
+# Check that node exists in node names
         wn = wntr.network.WaterNetworkModel(wn.inpfile_name)
+        if not node_name in wn.node_name_list:
+            raise Exception('The given node', node_name,'is not in the wn.node_name_list.')
+            return    
         try:
             fire_sim = fire_node_sim(wn, node_name, fire_parameters)    
             temp = fire_sim.node['pressure'].min()
             temp = temp[temp < fire_parameters.p_thresh]
             if hdf_output:
                 temp.to_hdf(hdf_file, "node"+str(node_name)+"fire_criticality", mode = 'a')
-            summary[node_name] = [list(temp.index), totalWSA(wn, fire_sim)]
+            summary[node_name] = [list(temp.index), totalWSA(wn, fire_sim, fire_parameters.fire_start, fire_parameters.fire_stop)]
         except Exception as e:
             temp = e
             if hdf_output:
                 temp ={node_name : temp}
                 temp.to_hdf(hdf_file, "node"+str(node_name)+"fire_criticality", mode = 'a')
             summary[node_name] = e
-            print(' failed')
         node = wn.get_node(node_name)
         node.demand_timeseries_list.remove_category('fire')#remove added demands    
         wn.reset_initial_values()
