@@ -9,8 +9,6 @@ Created on Tue Feb 26 15:45:18 2019
 import unittest
 import unittest.mock
 from os.path import abspath, dirname, join
-import pandas as pd
-
 
 testdir = dirname(abspath(str(__file__)))
 datadir = join(testdir, 'networks_for_testing')
@@ -34,12 +32,29 @@ class TestFireMethods(unittest.TestCase):
                   ]
         self.assertListEqual(expected_params, params, \
                         msg = 'fire parameters do not match default values.')
-
-    def test_PDDinitialize(self):
-        pass
-    
-    def test_fire_node_sim(self):
         
+    def test_totalWSA(self):
+        self.wn.options.time.duration = 129600 # 36 hrs
+        sim = self.wntr.sim.WNTRSimulator(self.wn, mode = 'PDD')
+        results = sim.run_sim()
+        wsa = self.wntr.analysis.totalWSA(self.wn, results, 86400, 129600)
+        total_demand = 0
+        expected_demand = 0
+        for junc in self.wn.junction_name_list:
+            total_demand += sum(results.node['demand'].loc[86400:129600, junc])
+            expected_demand += sum(self.wntr.metrics.expected_demand(self.wn).loc[86400:129600,junc])
+        expected_wsa = total_demand/expected_demand
+        self.assertAlmostEqual(expected_wsa, wsa, "WSA doesn't match expected value.")
+    
+    def test_PDDinitialize(self):
+        self.wntr.analysis.PDDinitialize(self.wn, 129600)
+        self.assertEqual(self.wn.options.time.duration, 129600)
+        self.assertEqual(self.wn.options.hydraulic.demand_multiplier, 1)
+        for name, node in self.wn.nodes():
+            self.assertEqual(node.nominal_pressure, 17.57)
+            self.assertEqual(node.minimum_pressure, 14.06)
+        
+    def test_fire_node_sim(self):       
         mock_fire_params = unittest.mock.Mock(fire_flow_demand = 1500,
                  fire_start = '24:00:00',
                  fire_stop = '26:00:00', 
@@ -100,10 +115,40 @@ class TestFireMethods(unittest.TestCase):
                  p_nom = 17.57,
                  demand_mult = 1
                  )        
-        
-        pass
-        
-        
+        firenodes = ['15', '35', '105', '123']
+#call method        
+        fire_criticality_results = self.wntr.analysis.fire_node_criticality(self.wn, firenodes, mock_fire_params)
+#replicate process
+        summary = {}        
+        for node_name in firenodes:
+            wn = self.wntr.network.WaterNetworkModel(self.wn.inpfile_name)
+#initialize water network for PDD simulation    
+            wn.options.time.duration = 93600
+            wn.options.hydraulic.demand_multiplier = mock_fire_params.demand_mult 
+            for name, node in wn.nodes():
+                node.nominal_pressure = mock_fire_params.p_nom  
+                node.minimum_pressure = mock_fire_params.p_thresh
+#add firefighting demand pattern to the desired node
+            fire_flow_demand = mock_fire_params.fire_flow_demand / (60*264.17) #convert from gpm to m3/s
+            fire_flow_pattern = self.wntr.network.elements.Pattern.binary_pattern('fire_flow',86400,\
+                           93600, self.wn.options.time.pattern_timestep, duration = 93600)
+            wn.add_pattern('fire_flow', fire_flow_pattern)
+            nodeobj = wn.get_node(node_name)
+            nodeobj.add_demand(fire_flow_demand, fire_flow_pattern, category = 'fire')
+#run sim and return results    
+            sim = self.wntr.sim.WNTRSimulator(wn, mode = 'PDD')
+            results = sim.run_sim(solver_options = {'MAXITER' :500})
+            temp = results.node['pressure'].min()
+            temp = temp[temp < mock_fire_params.p_thresh]
+            summary[node_name] = list(temp.index)
+            nodeobj.demand_timeseries_list.remove_category('fire')#remove added demands    
+            wn.reset_initial_values()
+        fire_criticality_dict = dict()
+        for node in firenodes:            
+            fire_criticality_dict[node] = fire_criticality_results.get(node)[0]
+#compare results 
+        self.assertDictEqual(summary,fire_criticality_dict)
+       
         
 if __name__ == '__main__':
     unittest.main()
