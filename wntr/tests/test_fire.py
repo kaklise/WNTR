@@ -18,7 +18,7 @@ class TestFireMethods(unittest.TestCase):
     def setUp(self):
         import wntr
         self.wntr = wntr
-        self.wn = self.wntr.network.WaterNetworkModel(join(netdir, 'net3.inp'))
+        self.wn = self.wntr.network.WaterNetworkModel(join(netdir, 'Net3.inp'))
         
     def test_fire_analysis_parameters(self):
         fire_params = self.wntr.analysis.fire.fire_analysis_parameters()
@@ -70,7 +70,7 @@ class TestFireMethods(unittest.TestCase):
         flow = results.link['flowrate']
 
 #initialize water network for PDD simulation            
-        wn2 = self.wntr.network.WaterNetworkModel(join(netdir, 'net3.inp'))
+        wn2 = self.wntr.network.WaterNetworkModel(join(netdir, 'Net3.inp'))
         wn2.options.time.duration = 26 * 3600
         wn2.options.hydraulic.demand_multiplier = 1
         node = self.wn.get_node(node_choice)
