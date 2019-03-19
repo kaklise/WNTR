@@ -147,12 +147,9 @@ class TestFireMethods(unittest.TestCase):
             fire_criticality = self.wntr.analysis.fire_node_criticality(self.wn, fire_nodes, self.mock_fire_params)
         exceptmsg = "('The given node', '13', 'is not in the wn.node_name_list.')"
         self.assertEqual(exceptmsg, str(cm.exception))   
-#test that exception is raised on simulation failure
-        wn2 = self.wntr.network.WaterNetworkModel(join(datadir,"Net1crash.inp"))
-        fire_nodes = ["10"]
-        self.mock_fire_params.fire_flow_demand = 5000
-        self.assertRaises(Exception, self.wntr.analysis.fire_node_criticality(wn2, 
-                                fire_nodes, self.mock_fire_params, hdf_file = 'fire_criticality.hdf')) 
+#test hdf file option
+        fire_nodes = ["115"]
+        fire_criticality = self.wntr.analysis.fire_node_criticality(self.wn, fire_nodes, self.mock_fire_params, hdf_file = 'fire_criticality.hdf')
 #test that hdf file is created
         hdf_file = join(testdir, 'fire_criticality.hdf')
         exists = isfile(hdf_file)
@@ -160,7 +157,7 @@ class TestFireMethods(unittest.TestCase):
         remove(join(testdir, 'fire_criticality.hdf'))
 #assert raises exception for invalid file name        
         with self.assertRaises(Exception) as cm:
-            fire_criticality = self.wntr.analysis.fire_node_criticality(wn2, 
+            fire_criticality = self.wntr.analysis.fire_node_criticality(self.wn, 
                                 fire_nodes, self.mock_fire_params, hdf_file = "fireresults")
         exceptmsg = 'The given hdf file name is invalid. Must be hdf5 compatible.'
         self.assertEqual(exceptmsg, str(cm.exception))           
