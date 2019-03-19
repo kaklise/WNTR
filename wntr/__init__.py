@@ -1,3 +1,4 @@
+from wntr import analysis
 from wntr import epanet
 from wntr import network
 from wntr import morph
