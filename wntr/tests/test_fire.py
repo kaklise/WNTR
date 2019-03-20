@@ -6,10 +6,12 @@ Created on Tue Feb 26 15:45:18 2019
 """
 
 #from nose.tools import *
-import unittest
-import unittest.mock
 from os.path import abspath, dirname, join, isfile
 from os import remove
+import sys
+import unittest
+if sys.version_info >= (3,3):
+    import unittest.mock
 
 testdir = dirname(abspath(str(__file__)))
 datadir = join(testdir, 'networks_for_testing')
@@ -20,7 +22,8 @@ class TestFireMethods(unittest.TestCase):
         import wntr
         self.wntr = wntr
         self.wn = self.wntr.network.WaterNetworkModel(join(netdir, 'Net3.inp'))
-        self.mock_fire_params = unittest.mock.Mock(fire_flow_demand = 1500,
+        if sys.version_info >= (3,3):
+            self.mock_fire_params = unittest.mock.Mock(fire_flow_demand = 1500,
                  fire_start = '24:00:00',
                  fire_stop = '26:00:00', 
                  p_thresh = 14.06, 
@@ -62,6 +65,7 @@ class TestFireMethods(unittest.TestCase):
             self.assertEqual(node.nominal_pressure, 17.57)
             self.assertEqual(node.minimum_pressure, 14.06)
         
+    @unittest.skipIf(sys.version_info < (3,3),"Skip unittests that use mock class if py version < 3.3" )
     def test_fire_node_sim(self):       
         node_choice = '159' #arbitrary selection
 #run fire_node_sim function
@@ -107,6 +111,7 @@ class TestFireMethods(unittest.TestCase):
             result = self.wntr.analysis.fire_node_sim(self.wn, node_choice, self.mock_fire_params)
         self.assertEqual("The given node name is not in the wn.node_name_list.", str(cm.exception))   
 
+    @unittest.skipIf(sys.version_info < (3,3),"Skip unittests that use mock class if py version < 3.3" )
     def test_fire_node_criticality(self):
         firenodes = ['15', '35', '105', '123']
 #call method        

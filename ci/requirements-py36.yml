@@ -1,4 +1,4 @@
-name: test_env
+name: test_env_36
 channels:
     - defaults
 dependencies:
@@ -11,6 +11,7 @@ dependencies:
     - plotly
     - nose
     - openpyxl
+    - pytables
+    - hdf5
     - pip:
         - coveralls
-        - tables  

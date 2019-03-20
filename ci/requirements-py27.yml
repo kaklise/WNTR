@@ -1,4 +1,4 @@
-name: test_env
+name: test_env_27
 channels:
     - defaults
 dependencies:
@@ -12,6 +12,7 @@ dependencies:
     - nose
     - enum34
     - openpyxl
+    - pytables
+    - hdf5
     - pip:
         - coveralls
-        - tables  
