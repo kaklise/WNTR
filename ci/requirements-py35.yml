@@ -13,3 +13,4 @@ dependencies:
     - openpyxl
     - pip:
         - coveralls
+        - tables  
