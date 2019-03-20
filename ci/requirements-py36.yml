@@ -11,6 +11,6 @@ dependencies:
     - plotly
     - nose
     - openpyxl
-    - tables  
     - pip:
         - coveralls
+        - tables  
