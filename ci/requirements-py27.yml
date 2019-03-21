@@ -1,4 +1,4 @@
-name: test_env_27
+name: test_env
 channels:
     - defaults
 dependencies:
