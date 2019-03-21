@@ -159,7 +159,7 @@ class TestFireMethods(unittest.TestCase):
         #hdf_file = join(testdir, 'fire_criticality.hdf')
         exists = isfile('./fire_criticality.hdf')
         self.assertTrue(exists, "fire_criticality.hdf exists is not true.")
-        remove(join(testdir, 'fire_criticality.hdf'))
+        remove('./fire_criticality.hdf')
 #assert raises exception for invalid file name        
         with self.assertRaises(Exception) as cm:
             fire_criticality = self.wntr.analysis.fire_node_criticality(self.wn, 
