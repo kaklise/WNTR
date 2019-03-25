@@ -26,14 +26,14 @@ class TestFireMethods(unittest.TestCase):
             self.mock_fire_params = unittest.mock.Mock(fire_flow_demand = 1500,
                  fire_start = '24:00:00',
                  fire_stop = '26:00:00', 
-                 p_thresh = 14.06, 
-                 p_nom = 17.57,
+                 p_thresh = 17.57, 
+                 p_nom = 21.96,
                  demand_mult = 1
                  )
         
     def test_fire_analysis_parameters(self):
         fire_params = self.wntr.analysis.fire.fire_analysis_parameters()
-        expected_params = [1500, '24:00:00', '26:00:00', 14.06, 17.57, 1] 
+        expected_params = [1500, '24:00:00', '26:00:00', 17.57, 21.96, 1] 
         params = [fire_params.fire_flow_demand, 
                   fire_params.fire_start,
                   fire_params.fire_stop, 
@@ -62,8 +62,8 @@ class TestFireMethods(unittest.TestCase):
         self.assertEqual(self.wn.options.time.duration, 129600)
         self.assertEqual(self.wn.options.hydraulic.demand_multiplier, 1)
         for name, node in self.wn.nodes():
-            self.assertEqual(node.nominal_pressure, 17.57)
-            self.assertEqual(node.minimum_pressure, 14.06)
+            self.assertEqual(node.nominal_pressure, 21.96)
+            self.assertEqual(node.minimum_pressure, 17.57)
         
     @unittest.skipIf(sys.version_info < (3,3),"Skip unittests that use mock class if py version < 3.3" )
     def test_fire_node_sim(self):       
@@ -79,8 +79,8 @@ class TestFireMethods(unittest.TestCase):
         wn2.options.hydraulic.demand_multiplier = 1
         node = self.wn.get_node(node_choice)
         for name, node in wn2.nodes():
-            node.nominal_pressure = 17.57
-            node.minimum_pressure = 14.06
+            node.nominal_pressure = 21.96
+            node.minimum_pressure = 17.57
             
 #add firefighting demand pattern to the desired node
         fire_flow_demand = 1500 / (60*264.17) #convert from gpm to m3/s
