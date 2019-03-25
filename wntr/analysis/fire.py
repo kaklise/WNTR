@@ -32,7 +32,7 @@ class fire_analysis_parameters(object):
                 demand multiplier for extra demand
     """
     def __init__(self, fire_flow_demand = 1500, fire_start = '24:00:00', fire_stop = '26:00:00',\
-    p_thresh = 14.06, p_nom = 17.57, demand_mult = 1):
+    p_thresh = 17.57, p_nom = 21.96, demand_mult = 1):
         self.fire_flow_demand = fire_flow_demand
         self.fire_start = fire_start
         self.fire_stop = fire_stop
@@ -111,7 +111,7 @@ def totalWSA(wn, results, start, stop, junctions = 'all'):
 #return total WSA
     return totalwsa
 
-def PDDinitialize(wn, duration, p_thresh = 14.06, nom_press = 17.57, demand_mult = 1):
+def PDDinitialize(wn, duration, p_thresh = 17.57, nom_press = 21.96, demand_mult = 1):
     '''
     Initialize network for PDD
     
@@ -222,7 +222,7 @@ def fire_node_criticality(wn, fire_nodes, fire_parameters, hdf_file = None):
         except Exception as e:
             temp = e
             if hdf_file:
-                temp ={node_name : temp, node_name : "Failed Simulation"}
+                temp ={node_name : temp, "Failure" : "Failed Simulation"}
                 temp = pd.DataFrame(temp, index = [0,1])
                 temp.to_hdf(hdf_file, "node"+str(node_name)+"fire_criticality", mode = 'a')
             summary[node_name] = e
