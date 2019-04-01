@@ -11,7 +11,7 @@ topographic, hydraulic, water quality, water security, or economic categories.
     population_impacted
 
 """
-from wntr.metrics.hydraulic import expected_demand
+from wntr.metrics.hydraulic import average_expected_demand
 import logging
 
 logger = logging.getLogger(__name__)
@@ -45,26 +45,27 @@ def query(arg1, operation, arg2):
 
     return mask
 
-def population(wn, R=0.00000876157):
+def population(wn, gpd_per_person = 200):
     """
     Compute population per node, rounded to the nearest integer [USEPA15]_.
 
-    .. math:: pop=\dfrac{expected_demand}{R}
+    .. math:: pop=\dfrac{expected_demand}{gpd_per_person * gpd_to_m3ps}
 
     Parameters
     -----------
     wn : wntr WaterNetworkModel
 
-    R : float (optional, default = 0.00000876157 m3/s = 200 gallons/day)
+    gpd_per_person : float (optional, default = 200 gallons/day)
         Average volume of water consumed per capita per day in m3/s
 
     Returns
     -------
     A pandas Series that contains population per node
     """
-
-    ex_dem = expected_demand(wn)
-    pop = ex_dem.mean(axis=0)/R
+    gpd_to_m3ps = 4.3813e-8
+    
+    #ex_dem = expected_demand(wn)
+    pop = average_expected_demand(wn)/(gpd_per_person * gpd_to_m3ps)
 
     return pop.round()
 

@@ -27,6 +27,27 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def base_demand(wn):
+    """
+    compute the base demand for each junction
+    
+    Parameters
+    ----------
+    wn : wntr WaterNetworkModel
+        Water network model
+    Returns    
+    -------
+    base_demand : Pandas Series
+                index = node_name, data = base demand in gpm
+        
+    """
+    base_dmnd = {}
+    for name, node in wn.junctions():
+      base_dmnd[name] = float(node.demand_timeseries_list.base_demand_list()[0]) / 6.309e-5 #convert to gpm
+      
+    return pd.Series(base_dmnd)
+        
+    
 def expected_demand(wn, start_time=None, end_time=None, timestep=None):
     """
     Compute expected demand at each junction and time using base demands
