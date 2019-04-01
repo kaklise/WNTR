@@ -32,7 +32,7 @@ class fire_analysis_parameters(object):
                 demand multiplier for extra demand
     """
     def __init__(self, fire_flow_demand = 1500, fire_start = '24:00:00', fire_stop = '26:00:00',\
-    p_thresh = 14.06, p_nom = 17.57, demand_mult = 1):
+    p_thresh = 17.57, p_nom = 21.96, demand_mult = 1):
         self.fire_flow_demand = fire_flow_demand
         self.fire_start = fire_start
         self.fire_stop = fire_stop
@@ -111,7 +111,7 @@ def totalWSA(wn, results, start, stop, junctions = 'all'):
 #return total WSA
     return totalwsa
 
-def PDDinitialize(wn, duration, p_thresh = 14.06, nom_press = 17.57, demand_mult = 1):
+def PDDinitialize(wn, duration, p_thresh = 17.57, nom_press = 21.96, demand_mult = 1):
     '''
     Initialize network for PDD
     
@@ -163,7 +163,6 @@ def fire_node_sim(wn, node_name, fire_parameters):
 # Check that node exists in node names
     if not node_name in wn.node_name_list:
         raise Exception("The given node name is not in the wn.node_name_list.")
-        return
 #add firefighting demand pattern to the desired node
     fire_flow_demand = fire_parameters.fire_flow_demand / (60*264.17) #convert from gpm to m3/s
     fire_flow_pattern = wntr.network.elements.Pattern.binary_pattern('fire_flow',_parse_value(fire_parameters.fire_start),\
@@ -176,7 +175,7 @@ def fire_node_sim(wn, node_name, fire_parameters):
     results = sim.run_sim(solver_options = {'MAXITER' :500})
     return results
             
-def fire_node_criticality(wn, fire_nodes, fire_parameters, hdf_output = False, hdf_file = "fire_criticality.hdf"):
+def fire_node_criticality(wn, fire_nodes, fire_parameters, hdf_file = None):
     '''
     run fire_node_sim for a series of nodes and record nodes that fall below pressure threshold for each scenario
     
@@ -191,32 +190,40 @@ def fire_node_criticality(wn, fire_nodes, fire_parameters, hdf_output = False, h
     fire_parameters: fire_analysis_parameters object
                     parameters for the fire analysis
     
-    hdf_output: boolean (optional, default = false)
-                switch for detailed results in hdf file
-    
-    hdf_file: str (optional, default = 'fire_criticality.hdf')
-              filepath/name for the hdf file
+    hdf_file: NoneType/str (optional, default = None)
+              filepath/name ending in '.hdf' for optional hdf output
+              
+    Returns
+    --------
+    summary: dict
+            Keys: each node in fire_nodes
+            Values: list of nodes below pressure threshold and total WSA for fire period
+                    -or- exception messages if sim fails.
     '''
     summary = {}
+    hdf_extensions = ["HDF", "HDF5", "H5"]
+    if hdf_file :
+        if hdf_file.upper().split(".")[-1] not in hdf_extensions:
+            raise Exception("The given hdf file name is invalid. Must be hdf5 compatible.")
 #run sim for all fire nodes and record results
     for node_name in fire_nodes:
 # Check that node exists in node names
         wn = wntr.network.WaterNetworkModel(wn.inpfile_name)
         if not node_name in wn.node_name_list:
             raise Exception('The given node', node_name,'is not in the wn.node_name_list.')
-            return    
         try:
             fire_sim = fire_node_sim(wn, node_name, fire_parameters)    
             temp = fire_sim.node['pressure'].min()
             temp = temp[temp < fire_parameters.p_thresh]
-            if hdf_output:
+            if hdf_file:
                 temp.to_hdf(hdf_file, "node"+str(node_name)+"fire_criticality", mode = 'a')
             totalwsa = totalWSA(wn, fire_sim, fire_parameters.fire_start, fire_parameters.fire_stop)
             summary[node_name] = [list(temp.index), totalwsa]
         except Exception as e:
             temp = e
-            if hdf_output:
-                temp ={node_name : temp}
+            if hdf_file:
+                temp ={node_name : temp, "Failure" : "Failed Simulation"}
+                temp = pd.DataFrame(temp, index = [0,1])
                 temp.to_hdf(hdf_file, "node"+str(node_name)+"fire_criticality", mode = 'a')
             summary[node_name] = e
         node = wn.get_node(node_name)

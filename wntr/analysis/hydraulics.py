@@ -105,4 +105,3 @@ def connectivity(wn, hdf_file = "hydraulic_connectivity.hdf"):
         qual.to_hdf(hdf_file, "trace_junction" + str(name), mode = 'a')
         
     return "success"
-    
