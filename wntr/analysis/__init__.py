@@ -4,3 +4,4 @@ incorporate many other wntr features.
 """
 from wntr.analysis.fire import fire_node_sim, fire_node_criticality, totalWSA, PDDinitialize
 #from wntr.analysis.hydraulics import pipe_criticality, connectivity
+from wntr.analysis.basic import basics
