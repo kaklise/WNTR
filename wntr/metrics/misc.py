@@ -68,7 +68,6 @@ def population(wn, gpd_per_person = 200):
     
     ave_ex_dem = average_expected_demand(wn)
     pop = ave_ex_dem/(gpd_per_person * gpd_to_m3ps)
-
     return pop.round()
 
 
