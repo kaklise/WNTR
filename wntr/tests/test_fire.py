@@ -6,9 +6,12 @@ Created on Tue Feb 26 15:45:18 2019
 """
 
 #from nose.tools import *
+from os.path import abspath, dirname, join, isfile
+from os import remove
+import sys
 import unittest
-import unittest.mock
-from os.path import abspath, dirname, join
+if sys.version_info >= (3,3):
+    import unittest.mock
 
 testdir = dirname(abspath(str(__file__)))
 datadir = join(testdir, 'networks_for_testing')
@@ -19,10 +22,18 @@ class TestFireMethods(unittest.TestCase):
         import wntr
         self.wntr = wntr
         self.wn = self.wntr.network.WaterNetworkModel(join(netdir, 'Net3.inp'))
+        if sys.version_info >= (3,3):
+            self.mock_fire_params = unittest.mock.Mock(fire_flow_demand = 1500,
+                 fire_start = '24:00:00',
+                 fire_stop = '26:00:00', 
+                 p_thresh = 17.57, 
+                 p_nom = 21.96,
+                 demand_mult = 1
+                 )
         
     def test_fire_analysis_parameters(self):
         fire_params = self.wntr.analysis.fire.fire_analysis_parameters()
-        expected_params = [1500, '24:00:00', '26:00:00', 14.06, 17.57, 1] 
+        expected_params = [1500, '24:00:00', '26:00:00', 17.57, 21.96, 1] 
         params = [fire_params.fire_flow_demand, 
                   fire_params.fire_start,
                   fire_params.fire_stop, 
@@ -51,21 +62,14 @@ class TestFireMethods(unittest.TestCase):
         self.assertEqual(self.wn.options.time.duration, 129600)
         self.assertEqual(self.wn.options.hydraulic.demand_multiplier, 1)
         for name, node in self.wn.nodes():
-            self.assertEqual(node.nominal_pressure, 17.57)
-            self.assertEqual(node.minimum_pressure, 14.06)
+            self.assertEqual(node.nominal_pressure, 21.96)
+            self.assertEqual(node.minimum_pressure, 17.57)
         
+    @unittest.skipIf(sys.version_info < (3,3),"Skip unittests that use mock class if py version < 3.3" )
     def test_fire_node_sim(self):       
-        mock_fire_params = unittest.mock.Mock(fire_flow_demand = 1500,
-                 fire_start = '24:00:00',
-                 fire_stop = '26:00:00', 
-                 p_thresh = 14.06, 
-                 p_nom = 17.57,
-                 demand_mult = 1
-                 )        
-
         node_choice = '159' #arbitrary selection
 #run fire_node_sim function
-        results = self.wntr.analysis.fire_node_sim(self.wn, node_choice, mock_fire_params)
+        results = self.wntr.analysis.fire_node_sim(self.wn, node_choice, self.mock_fire_params)
         pressures = results.node['pressure']
         flow = results.link['flowrate']
 
@@ -75,8 +79,8 @@ class TestFireMethods(unittest.TestCase):
         wn2.options.hydraulic.demand_multiplier = 1
         node = self.wn.get_node(node_choice)
         for name, node in wn2.nodes():
-            node.nominal_pressure = 17.57
-            node.minimum_pressure = 14.06
+            node.nominal_pressure = 21.96
+            node.minimum_pressure = 17.57
             
 #add firefighting demand pattern to the desired node
         fire_flow_demand = 1500 / (60*264.17) #convert from gpm to m3/s
@@ -104,32 +108,26 @@ class TestFireMethods(unittest.TestCase):
 #test exception handling        
         node_choice = '13' #invalid node name
         with self.assertRaises(Exception) as cm:
-            result = self.wntr.analysis.fire_node_sim(self.wn, node_choice, mock_fire_params)
+            result = self.wntr.analysis.fire_node_sim(self.wn, node_choice, self.mock_fire_params)
         self.assertEqual("The given node name is not in the wn.node_name_list.", str(cm.exception))   
 
+    @unittest.skipIf(sys.version_info < (3,3),"Skip unittests that use mock class if py version < 3.3" )
     def test_fire_node_criticality(self):
-        mock_fire_params = unittest.mock.Mock(fire_flow_demand = 1500,
-                 fire_start = '24:00:00',
-                 fire_stop = '26:00:00', 
-                 p_thresh = 14.06, 
-                 p_nom = 17.57,
-                 demand_mult = 1
-                 )        
         firenodes = ['15', '35', '105', '123']
 #call method        
-        fire_criticality_results = self.wntr.analysis.fire_node_criticality(self.wn, firenodes, mock_fire_params)
+        fire_criticality_results = self.wntr.analysis.fire_node_criticality(self.wn, firenodes, self.mock_fire_params)
 #replicate process
         summary = {}        
         for node_name in firenodes:
             wn = self.wntr.network.WaterNetworkModel(self.wn.inpfile_name)
 #initialize water network for PDD simulation    
             wn.options.time.duration = 93600
-            wn.options.hydraulic.demand_multiplier = mock_fire_params.demand_mult 
+            wn.options.hydraulic.demand_multiplier = self.mock_fire_params.demand_mult 
             for name, node in wn.nodes():
-                node.nominal_pressure = mock_fire_params.p_nom  
-                node.minimum_pressure = mock_fire_params.p_thresh
+                node.nominal_pressure = self.mock_fire_params.p_nom  
+                node.minimum_pressure = self.mock_fire_params.p_thresh
 #add firefighting demand pattern to the desired node
-            fire_flow_demand = mock_fire_params.fire_flow_demand / (60*264.17) #convert from gpm to m3/s
+            fire_flow_demand = self.mock_fire_params.fire_flow_demand / (60*264.17) #convert from gpm to m3/s
             fire_flow_pattern = self.wntr.network.elements.Pattern.binary_pattern('fire_flow',86400,\
                            93600, self.wn.options.time.pattern_timestep, duration = 93600)
             wn.add_pattern('fire_flow', fire_flow_pattern)
@@ -139,7 +137,7 @@ class TestFireMethods(unittest.TestCase):
             sim = self.wntr.sim.WNTRSimulator(wn, mode = 'PDD')
             results = sim.run_sim(solver_options = {'MAXITER' :500})
             temp = results.node['pressure'].min()
-            temp = temp[temp < mock_fire_params.p_thresh]
+            temp = temp[temp < self.mock_fire_params.p_thresh]
             summary[node_name] = list(temp.index)
             nodeobj.demand_timeseries_list.remove_category('fire')#remove added demands    
             wn.reset_initial_values()
@@ -148,9 +146,27 @@ class TestFireMethods(unittest.TestCase):
             fire_criticality_dict[node] = fire_criticality_results.get(node)[0]
 #compare results 
         self.assertDictEqual(summary,fire_criticality_dict)
-       
+#assert raises exception for invalid nodes
+        fire_nodes = ["13"]  #invalid node name
+        with self.assertRaises(Exception) as cm:
+            fire_criticality = self.wntr.analysis.fire_node_criticality(self.wn, fire_nodes, self.mock_fire_params)
+        exceptmsg = "('The given node', '13', 'is not in the wn.node_name_list.')"
+        self.assertEqual(exceptmsg, str(cm.exception))   
+#test hdf file option
+        fire_nodes = ["115"]
+        fire_criticality = self.wntr.analysis.fire_node_criticality(self.wn, fire_nodes, self.mock_fire_params, hdf_file = 'fire_criticality.hdf')
+#test that hdf file is created
+        #hdf_file = join(testdir, 'fire_criticality.hdf')
+        exists = isfile('./fire_criticality.hdf')
+        self.assertTrue(exists, "fire_criticality.hdf exists is not true.")
+        remove('./fire_criticality.hdf')
+#assert raises exception for invalid file name        
+        with self.assertRaises(Exception) as cm:
+            fire_criticality = self.wntr.analysis.fire_node_criticality(self.wn, 
+                                fire_nodes, self.mock_fire_params, hdf_file = "fireresults")
+        exceptmsg = 'The given hdf file name is invalid. Must be hdf5 compatible.'
+        self.assertEqual(exceptmsg, str(cm.exception))           
         
 if __name__ == '__main__':
     unittest.main()
-     
     

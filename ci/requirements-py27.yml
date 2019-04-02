@@ -15,5 +15,7 @@ dependencies:
     - nose
     - enum34
     - openpyxl
+    - pytables
+    - hdf5
     - pip:
         - coveralls

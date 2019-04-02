@@ -14,5 +14,7 @@ dependencies:
     - utm
     - nose
     - openpyxl
+    - pytables
+    - hdf5
     - pip:
         - coveralls

@@ -54,6 +54,7 @@ def population(wn, gpd_per_person = 200):
     Parameters
     -----------
     wn : wntr WaterNetworkModel
+        Water network model
 
     gpd_per_person : float (optional, default = 200 gallons/day)
         Average volume of water consumed per capita per day in m3/s
@@ -62,10 +63,11 @@ def population(wn, gpd_per_person = 200):
     -------
     A pandas Series that contains population per node
     """
+
     gpd_to_m3ps = 4.3813e-8
     
-    #ex_dem = expected_demand(wn)
-    pop = average_expected_demand(wn)/(gpd_per_person * gpd_to_m3ps)
+    ave_ex_dem = average_expected_demand(wn)
+    pop = ave_ex_dem/(gpd_per_person * gpd_to_m3ps)
 
     return pop.round()
 

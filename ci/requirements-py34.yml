@@ -13,5 +13,7 @@ dependencies:
     - folium
     - nose
     - openpyxl
+    - pytables
+    - hdf5
     - pip:
         - coveralls
