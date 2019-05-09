@@ -73,12 +73,21 @@ The following example plots the network along with node population (:numref:`fig
     >>> wntr.graphics.plot_interactive_network(wn, node_attribute=population, node_range=[0,500], 
     ...                                        auto_open=False) # doctest: +ELLIPSIS
 
-.. _fig-plotly:
-.. figure:: figures/plot_plotly_network.png
+
+.. raw:: html
+    
+    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; height: auto;">
+        <iframe src="_static/plotly_interactive.html" frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+    </div>
+
+.. .. _fig-plotly:
+   .. figure:: figures/plot_plotly_network.png
    :scale: 100 %
    :alt: Network
-   
-   Example interactive network graphic.
+  
+..
+  
+Example interactive network graphic.
    
 Interactive Leaflet networks
 ------------------------------------------
@@ -106,15 +115,17 @@ with pipe length over the city of Albuquerque (for demonstration purposes only) 
 .. raw:: html
     
     <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; height: auto;">
-        <iframe src="//www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+        <iframe src="_static/leaflet_map.html" frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
     </div>
 
-.. _fig-leaflet:
-.. figure:: figures/plot_folium_network.png
+.. .. _fig-leaflet:
+   .. figure:: figures/plot_folium_network.png
    :scale: 50 %
    :alt: Network
-   
-   Example interactive Leaflet network graphic.
+
+..   
+
+Example interactive Leaflet network graphic.
    
 Network animation
 ----------------------
@@ -174,12 +185,23 @@ The following example uses simulation results from above, and converts the graph
     <matplotlib.axes._subplots.AxesSubplot object ...
     >>> plotly.offline.plot_mpl(fig, filename='pressure_timeseries.html', auto_open=False) # doctest: +SKIP
     
-.. _fig-interactive_timeseries:
-.. figure:: figures/plot_interactive_timeseries.png
+
+.. raw:: html
+    
+    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; height: auto;">
+        <iframe src="_static/pressure_timeseries.html" frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+    </div>
+
+
+
+.. .. _fig-interactive_timeseries:
+   .. figure:: figures/plot_interactive_timeseries.png
    :scale: 100 %
    :alt: Network
    
-   Example interactive timeseries graphic.
+..   
+  
+Example interactive timeseries graphic.
 
 Fragility curves
 -----------------
