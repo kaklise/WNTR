@@ -103,6 +103,8 @@ with pipe length over the city of Albuquerque (for demonstration purposes only) 
     >>> wntr.graphics.plot_leaflet_network(wn2, link_attribute=length, link_width=3, 
     ...                                    link_range=[0,1000]) # doctest: +ELLIPSIS
 
+.. raw:: html
+<iframe src="_static/folium5.html" height="345px" width="100%"></iframe>
 
 .. _fig-leaflet:
 .. figure:: figures/plot_folium_network.png
