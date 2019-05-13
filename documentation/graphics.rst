@@ -65,7 +65,7 @@ However, link attributes currently cannot be displayed on the graphic.
 .. note:: 
    This function requires the Python package **plotly**, which is an optional dependency of WNTR.
    
-The following example plots the network along with node population (:numref:`fig-plotly`).
+The following example plots the network along with node population.
 
 .. doctest::
 
@@ -76,17 +76,10 @@ The following example plots the network along with node population (:numref:`fig
 
 .. raw:: html
     
-    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; height: auto;">
+    <div style="position: relative; padding-bottom: 75%; padding-right: 50%; overflow: hidden; max-width: 100%; height: auto;">
         <iframe src="_static/plotly_interactive.html" frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
     </div>
 
-.. .. _fig-plotly:
-   .. figure:: figures/plot_plotly_network.png
-   :scale: 100 %
-   :alt: Network
-  
-..
-  
 Example interactive network graphic.
    
 Interactive Leaflet networks
@@ -102,7 +95,7 @@ As with basic network graphics, a wide range of plotting options can be supplied
    This function requires the Python package **folium**, which is an optional dependency of WNTR.
    
 The following example converts node coordinates to longitude/latitude and plots the network along 
-with pipe length over the city of Albuquerque (for demonstration purposes only) (:numref:`fig-leaflet`). 
+with pipe length over the city of Albuquerque (for demonstration purposes only). 
 
 .. doctest::
 
@@ -112,18 +105,12 @@ with pipe length over the city of Albuquerque (for demonstration purposes only) 
     >>> wntr.graphics.plot_leaflet_network(wn2, link_attribute=length, link_width=3, 
     ...                                    link_range=[0,1000]) # doctest: +ELLIPSIS
 
+.. _fig-leaflet:
 .. raw:: html
     
     <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; height: auto;">
         <iframe src="_static/leaflet_map.html" frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
     </div>
-
-.. .. _fig-leaflet:
-   .. figure:: figures/plot_folium_network.png
-   :scale: 50 %
-   :alt: Network
-
-..   
 
 Example interactive Leaflet network graphic.
    
@@ -174,7 +161,7 @@ Basic timeseries graphics can be converted to interactive timeseries graphics us
 .. note:: 
    This functionality requires the Python package **plotly**, which is an optional dependency of WNTR.
    
-The following example uses simulation results from above, and converts the graphic to an interactive graphic (:numref:`fig-interactive_timeseries`).
+The following example uses simulation results from above, and converts the graphic to an interactive graphic.
 
 .. doctest::
 
@@ -188,19 +175,10 @@ The following example uses simulation results from above, and converts the graph
 
 .. raw:: html
     
-    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; height: auto;">
+    <div style="position: relative; padding-bottom: 75%; height: 0; overflow: hidden; max-width: 100%; height: auto;">
         <iframe src="_static/pressure_timeseries.html" frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
     </div>
 
-
-
-.. .. _fig-interactive_timeseries:
-   .. figure:: figures/plot_interactive_timeseries.png
-   :scale: 100 %
-   :alt: Network
-   
-..   
-  
 Example interactive timeseries graphic.
 
 Fragility curves
