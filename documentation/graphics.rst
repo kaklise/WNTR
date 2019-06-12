@@ -65,7 +65,7 @@ However, link attributes currently cannot be displayed on the graphic.
 .. note:: 
    This function requires the Python package **plotly**, which is an optional dependency of WNTR.
    
-The following example plots the network along with node population.
+The following example plots the network along with node population (:numref:`fig-plotly`).
 
 .. doctest::
 
@@ -73,12 +73,10 @@ The following example plots the network along with node population.
     >>> wntr.graphics.plot_interactive_network(wn, node_attribute=population, node_range=[0,500], 
     ...                                        auto_open=False) # doctest: +ELLIPSIS
 
-
-.. raw:: html
-    
-    <div style="position: relative; padding-bottom: 75%; padding-right: 50%; overflow: hidden; max-width: 100%; height: auto;">
-        <iframe src="_static/plotly_interactive.html" frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
-    </div>
+.. _fig-plotly:
+.. figure:: figures/plot_plotly_network.png
+   :scale: 100 %
+   :alt: Network
 
 Example interactive network graphic.
    
@@ -109,7 +107,7 @@ with pipe length over the city of Albuquerque (for demonstration purposes only).
 .. raw:: html
     
     <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; height: auto;">
-        <iframe src="_static/leaflet_map.html" frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+        <iframe src="_static/comp_leaflet_map.html" frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
     </div>
 
 Example interactive Leaflet network graphic.
@@ -165,18 +163,24 @@ The following example uses simulation results from above, and converts the graph
 
 .. doctest::
 
-    >>> pressure = results.node['pressure']
-    >>> fig = plt.figure()
-    >>> ax = plt.gca()
-    >>> pressure.plot(legend=False, ax=ax) # doctest: +ELLIPSIS
+    >>> tankH = results.node['pressure'].loc[:,wn.tank_name_list] * 3.28084  # Convert to ft
+    >>> tankH.index /= 3600
+    >>> fig = plt.figure(figsize=(9, 5))
+    >>> ax = fig.gca()
+    >>> tankH.plot(legend=True, ax=ax) # doctest: +ELLIPSIS
     <matplotlib.axes._subplots.AxesSubplot object ...
-    >>> plotly.offline.plot_mpl(fig, filename='pressure_timeseries.html', auto_open=False) # doctest: +SKIP
+    >>> ax.set_xlabel('Simulation Time (hr)')
+    >>> ax.set_ylabel('Head (ft)')
+    >>> lgd = plt.legend(loc='lower right', shadow=True, title='Tanks', fancybox=True)
+    >>> lgd.get_frame().set_alpha(0.5)
+    >>> pressure.plot(legend=False, ax=ax) # doctest: +ELLIPSIS
+    >>> plotly.offline.plot_mpl(fig, filename='tankhead_timeseries.html', auto_open=False) # doctest: +SKIP
     
 
 .. raw:: html
-    
-    <div style="position: relative; padding-bottom: 75%; height: 0; overflow: hidden; max-width: 100%; height: auto;">
-        <iframe src="_static/pressure_timeseries.html" frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+
+    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; height: auto;">
+        <iframe src="_static/tanklevel_timeseries.html" frameborder="0" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
     </div>
 
 Example interactive timeseries graphic.
