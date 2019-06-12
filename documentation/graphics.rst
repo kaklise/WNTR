@@ -171,8 +171,6 @@ The following example uses simulation results from above, and converts the graph
     <matplotlib.axes._subplots.AxesSubplot object ...
     >>> ax.set_xlabel('Simulation Time (hr)')
     >>> ax.set_ylabel('Head (ft)')
-    >>> lgd = plt.legend(loc='lower right', shadow=True, title='Tanks', fancybox=True)
-    >>> lgd.get_frame().set_alpha(0.5)
     >>> pressure.plot(legend=False, ax=ax) # doctest: +ELLIPSIS
     >>> plotly.offline.plot_mpl(fig, filename='tankhead_timeseries.html', auto_open=False) # doctest: +SKIP
     
