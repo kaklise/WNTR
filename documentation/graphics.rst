@@ -170,8 +170,9 @@ The following example uses simulation results from above, and converts the graph
     >>> tankH.plot(legend=True, ax=ax) # doctest: +ELLIPSIS
     <matplotlib.axes._subplots.AxesSubplot object ...
     >>> ax.set_xlabel('Simulation Time (hr)')
+    Text(0.5, 0, 'Simulation Time (hr)')
     >>> ax.set_ylabel('Head (ft)')
-    >>> pressure.plot(legend=False, ax=ax) # doctest: +ELLIPSIS
+    Text(0, 0.5, 'Head (ft))
     >>> plotly.offline.plot_mpl(fig, filename='tankhead_timeseries.html', auto_open=False) # doctest: +SKIP
     
 
