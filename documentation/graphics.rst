@@ -172,7 +172,7 @@ The following example uses simulation results from above, and converts the graph
     >>> ax.set_xlabel('Simulation Time (hr)')
     Text(0.5, 0, 'Simulation Time (hr)')
     >>> ax.set_ylabel('Head (ft)')
-    Text(0, 0.5, 'Head (ft))
+    Text(0, 0.5, 'Head (ft)')
     >>> plotly.offline.plot_mpl(fig, filename='tankhead_timeseries.html', auto_open=False) # doctest: +SKIP
     
 
