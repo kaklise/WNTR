@@ -338,6 +338,5 @@ def test_skeletonize_Net3():
 
     
 if __name__ == '__main__':
-    test_skeletonize()
     test_UTM_to_longlat_to_UTM()
 

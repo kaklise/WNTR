@@ -90,7 +90,6 @@ class WaterNetworkModel(AbstractModel):
         if inp_file_name:
             self.read_inpfile(inp_file_name)
         
-        self.inpfile_name = inp_file_name    
         # To be deleted and/or renamed and/or moved
         # Time parameters
         self.sim_time = 0.0

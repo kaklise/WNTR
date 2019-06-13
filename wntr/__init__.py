@@ -1,4 +1,3 @@
-from wntr import analysis
 from wntr import epanet
 from wntr import network
 from wntr import morph
@@ -7,7 +6,6 @@ from wntr import sim
 from wntr import scenario
 from wntr import graphics
 from wntr import utils
-
 
 __version__ = '0.1.7'
 
