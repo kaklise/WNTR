@@ -419,8 +419,7 @@ def plot_leaflet_network(wn, node_attribute=None, link_attribute=None,
                link_cmap_bins='cut', link_labels=True,
                add_legend=False, round_ndigits=2, zoom_start=13, 
                add_to_node_popup=None, add_to_link_popup=None,
-               add_layer_control=False,
-               filename='leaflet_network.html', return_map=False):
+               filename='leaflet_network.html'):
     """
     Create an interactive scalable network graphic on a Leaflet map using folium.  
 
@@ -505,15 +504,9 @@ def plot_leaflet_network(wn, node_attribute=None, link_attribute=None,
         To add additional information to the link popup, use a DataFrame with 
         link name as index and attributes as values.  Column names will be added
         to the popup along with each value for a given link.
-        
-    add_layer_control: bool, optional
-        Add layer control widget to map
-    
+            
     filename : str, optional
         Filename used to save the map
-    
-    return_map : bool, optional
-        Return the folium map object
     """
     
     if folium is None:
@@ -661,13 +654,10 @@ def plot_leaflet_network(wn, node_attribute=None, link_attribute=None,
     #if add_longlat_popup:
     #    m.add_child(folium.LatLngPopup())
     
-    if add_layer_control:
-        folium.LayerControl().add_to(m)
+    folium.LayerControl().add_to(m)
     
     m.save(filename)
-    if return_map:
-        return m
- 
+     
 def network_animation(wn, node_attribute=None, link_attribute=None, title=None,
                node_size=20, node_range = [None,None], node_cmap=None, node_labels=False,
                link_width=1, link_range = [None,None], link_cmap=None, link_labels=False,
