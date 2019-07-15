@@ -139,3 +139,13 @@ if __name__ == '__main__':
     output_path = '../net3_map.html'
     # Make the map!
     create_leaflet_map(center, wn_nodes, wn_links, output=output_path)
+    '''
+    Now a .html map file is located at output_path.
+
+    Zoom in and out on different areas and use the search bar to locate
+    network components by their EPANET .inp file ID.
+    
+    **Note** Leaflet is not supported in Internet Explorer, so alternative 
+    browsers must be used.
+    '''
+
