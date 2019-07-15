@@ -127,6 +127,7 @@ if __name__ == '__main__':
     except FileNotFoundError:
         wn = wntr.network.WaterNetworkModel("../networks/Net3.inp")
     # Morph the WN coordinates based on two known reference points.
+    # Using the Albuquerque area for demonstration purposes.
     longlat_map = {'Lake': (-106.6851, 35.1344), '219': (-106.5073, 35.0713)}
     wn2 = wntr.morph.convert_node_coordinates_to_longlat(wn, longlat_map)
     # Get the geojson representations of the water network.
