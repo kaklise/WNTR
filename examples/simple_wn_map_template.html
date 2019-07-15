@@ -153,21 +153,21 @@
     }).addTo(map);    
             
     var layer_control = {
-        base_layers : {
-            "Nodes": wnnodes,
-            "Links": wnlinks
+        overlays : {
+            "Nodes": geojsonNodeLayer,
+            "Links": geoJsonLinkLayer
         }
     };            
         
     L.control.layers(
-        layer_control.base_layers,
         null,
+        layer_control.overlays,
         {position: 'bottomleft',
          collapsed: false,
          autoZIndex: true
         }
     ).addTo(map);
     
-    L.control.scale({position:'topright'}).addTo(map);
-                
+    L.control.scale({position:'topright'}).addTo(map);    
+    
 </script>

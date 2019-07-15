@@ -123,7 +123,7 @@ def create_leaflet_map(latlong, wn_nodes, wn_links, output='./wn_map.html'):
 if __name__ == '__main__':
     # Load the inp file.
     try:
-        wn = wntr.network.WaterNetworkModel("../../networks/Net3.inp")
+        wn = wntr.network.WaterNetworkModel("./networks/Net3.inp")
     except FileNotFoundError:
         wn = wntr.network.WaterNetworkModel("../networks/Net3.inp")
     # Morph the WN coordinates based on two known reference points.
@@ -136,14 +136,23 @@ if __name__ == '__main__':
     # Note the reversed order of the coordinates to [lat, long].
     center = [35.08, -106.6]
     # Specify an output path/file name
-    output_path = '../net3_map.html'
+    output_path = 'net3_map.html'
     # Make the map!
     create_leaflet_map(center, wn_nodes, wn_links, output=output_path)
     '''
     Now a .html map file is located at output_path.
 
-    Zoom in and out on different areas and use the search bar to locate
-    network components by their EPANET .inp file ID.
+    -Pan by clicking and dragging with mouse or arrow keys.
+
+    -Zoom in and out on different areas using mouse scroll or "+" and "-" keys
+    or buttons in top left.
+
+    -Use the search bar in top left to locate network components by their
+    EPANET .inp file ID.
+
+    -Toggle on/off the node and link layers with layer control in bottom left.
+
+    -Scale is shown in top right.
     
     **Note** Leaflet is not supported in Internet Explorer, so alternative 
     browsers must be used.
