@@ -1,18 +1,13 @@
 import wntr
 from wntr.sim.solvers import PyomoSolver
 
-
-### Create a Pyomo model
-inp_file = 'networks/Net1.inp'
-HW_approx = 'piecewise' 
-demand_model = 'DD' # DD or PDD
-
 # Create a water network model
+inp_file = 'networks/Net1.inp'
 wn = wntr.network.WaterNetworkModel(inp_file)
-wn.options.hydraulic.demand_model = demand_model
+wn.options.hydraulic.demand_model = 'DD' # DD or PDD
 
 # Create a WNTR steady state algebraic hydaulic model (this methods is used within the WNTRSimulator) 
-model, updater = wntr.sim.hydraulics.create_hydraulic_model(wn, HW_approx=HW_approx)
+model, updater = wntr.sim.hydraulics.create_hydraulic_model(wn, HW_approx='piecewise')
 # Extract the jacobian and residuals
 model.set_structure()
 r = model.evaluate_residuals(labeled=True)
