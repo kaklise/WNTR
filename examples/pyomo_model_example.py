@@ -8,7 +8,7 @@ HW_approx = 'piecewise'
 
 ### Create a Pyomo model
 wn = wntr.network.WaterNetworkModel(inp_file)
-model, updater = wntr.sim.hydraulics.create_hydraulic_model(wn, mode=mode, HW_approx=HW_approx)
+model, updater = wntr.sim.hydraulics.create_hydraulic_model(wn, HW_approx=HW_approx)
 pyomo_model, pyomo_map = wntr.sim.hydraulics.convert_hydraulic_model_to_pyomo(model)
 print(pyomo_model.pprint())
 
@@ -17,13 +17,13 @@ print(pyomo_model.pprint())
 # Solve using the NewtonSolver
 wn = wntr.network.WaterNetworkModel(inp_file)
 wn.options.time.duration = 24*3600
-sim = wntr.sim.WNTRSimulator(wn, mode=mode)
+sim = wntr.sim.WNTRSimulator(wn)
 results1 = sim.run_sim(HW_approx=HW_approx) # solver defaults to NewtonSolver
 
 # Solve using Pyomo and ipopt (PyomoSolver)
 wn = wntr.network.WaterNetworkModel(inp_file)
 wn.options.time.duration = 24*3600
-sim = wntr.sim.WNTRSimulator(wn, mode=mode)
+sim = wntr.sim.WNTRSimulator(wn)
 results2 = sim.run_sim(HW_approx=HW_approx, solver=PyomoSolver, solver_options={'tee': False})
 
 # Compare results
