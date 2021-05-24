@@ -19,14 +19,13 @@ import networkx as nx
 import math
 from collections import Counter
 import sys
-if sys.version_info >= (3,0):
-    from functools import reduce
+from functools import reduce
     
 import logging
 
 logger = logging.getLogger(__name__)
 
-def expected_demand(wn, start_time=None, end_time=None, timestep=None):
+def expected_demand(wn, start_time=None, end_time=None, timestep=None, category=None):
     """
     Compute expected demand at each junction and time using base demands
     and demand patterns along with the demand multiplier
@@ -45,10 +44,12 @@ def expected_demand(wn, start_time=None, end_time=None, timestep=None):
     timestep : int (optional)
         Timestep, if None then value is set to wn.options.time.report_timestep
     
+    category : str (optional)
+        Demand category name.  If None, all demand categories are used.
+            
     Returns
     -------
-    A pandas DataFrame that contains expected demand in m3/s
-    (index = times, columns = junction names).
+    A pandas DataFrame that contains expected demand in m3/s (index = times, columns = junction names).
     """
     if start_time is None:
         start_time = 0
@@ -63,14 +64,14 @@ def expected_demand(wn, start_time=None, end_time=None, timestep=None):
         dem = []
         for ts in tsteps:
             dem.append(junc.demand_timeseries_list.at(ts, 
-                       multiplier=wn.options.hydraulic.demand_multiplier))
+                       multiplier=wn.options.hydraulic.demand_multiplier, category=category))
         exp_demand[name] = dem 
     
     exp_demand = pd.DataFrame(index=tsteps, data=exp_demand)
     
     return exp_demand
 
-def average_expected_demand(wn):
+def average_expected_demand(wn, category=None):
     """
     Compute average expected demand per day at each junction using base demands
     and demand patterns along with the demand multiplier
@@ -79,11 +80,13 @@ def average_expected_demand(wn):
     -----------
     wn : wntr WaterNetworkModel
         Water network model
+    
+    category : str (optional)
+        Demand category name.  If None, all demand categories are used.
         
     Returns
     -------
-    A pandas Series that contains average expected demand in m3/s
-    (index = junction names).
+    A pandas Series that contains average expected demand in m3/s (index = junction names).
     """
     L = [24*3600] # start with a 24 hour pattern
     for name, pattern in wn.patterns():
@@ -94,7 +97,7 @@ def average_expected_demand(wn):
     end_time = start_time+lcm
     timestep = wn.options.time.pattern_timestep
         
-    exp_demand = expected_demand(wn, start_time, end_time-timestep, timestep)
+    exp_demand = expected_demand(wn, start_time, end_time-timestep, timestep, category=category)
     ave_exp_demand = exp_demand.mean(axis=0)
 
     return ave_exp_demand
@@ -307,7 +310,8 @@ def entropy(G, sources=None, sinks=None):
             S[nodej] = np.nan # nodej is not connected to any sources
             continue
 
-        sp = np.array(sp)
+        # "dtype=object" is needed to create an array from a list of lists with differnet lengths
+        sp = np.array(sp, dtype=object)
 
         # Uj = set of nodes on the upstream ends of links incident on node j
         Uj = G.predecessors(nodej)
@@ -343,7 +347,7 @@ def entropy(G, sources=None, sinks=None):
         # Equation 7
         S[nodej] = 0
         for idx in range(len(qij)):
-            if qij[idx]/Q[nodej] > 0:
+            if Q[nodej] != 0 and qij[idx]/Q[nodej] > 0:
                 S[nodej] = S[nodej] - \
                     qij[idx]/Q[nodej]*math.log(qij[idx]/Q[nodej]) + \
                     qij[idx]/Q[nodej]*math.log(aij[idx])

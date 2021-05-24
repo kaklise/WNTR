@@ -164,12 +164,12 @@ class WaterNetworkModel(AbstractModel):
         """
         Return the current time of day in seconds from 12 AM
         """
-        return self.shifted_time % (24*3600)
+        return self._shifted_time % (24*3600)
 
     @property
     def _clock_day(self):
         """Return the clock-time day of the simulation"""
-        return int(self.shifted_time / 86400)
+        return int(self._shifted_time / 86400)
 
     ### # 
     ### Iteratable attributes
@@ -360,7 +360,7 @@ class WaterNetworkModel(AbstractModel):
 
     def add_tank(self, name, elevation=0.0, init_level=3.048,
                  min_level=0.0, max_level=6.096, diameter=15.24,
-                 min_vol=0.0, vol_curve=None, coordinates=None):
+                 min_vol=0.0, vol_curve=None, overflow=False, coordinates=None):
         """
         Adds a tank to the water network model
 
@@ -382,6 +382,8 @@ class WaterNetworkModel(AbstractModel):
             Minimum tank volume.
         vol_curve : str
             Name of a volume curve, optional
+        overflow : bool
+            Does this tank overflow (EpanetSimulator only)
         coordinates : tuple of floats, optional
             X-Y coordinates of the node location.
             
@@ -393,7 +395,7 @@ class WaterNetworkModel(AbstractModel):
         """
         self._node_reg.add_tank(name, elevation, init_level, min_level, 
                                 max_level, diameter, min_vol, vol_curve, 
-                                coordinates)
+                                overflow, coordinates)
 
     def add_reservoir(self, name, base_head=0.0, head_pattern=None, coordinates=None):
         """
@@ -1691,6 +1693,29 @@ class WaterNetworkModel(AbstractModel):
                 pass
         return pd.Series(link_attribute_dict)
 
+    def convert_controls_to_rules(self, priority=3):
+        """
+        Convert all controls to rules.
+        
+        Note that for an exact match between controls and rules, the rule 
+        timestep must be very small.
+
+        Parameters
+        ----------
+        priority : int, optional
+           Rule priority, default is 3.
+
+        """
+        for name in self.control_name_list:
+            control = self.get_control(name)
+            if isinstance(control, Control):
+                act = control.actions()[0]
+                cond = control.condition
+                rule = Rule(cond, act, priority=priority)
+                self.add_control(name.replace(' ', '_')+'_Rule', rule)
+                self.remove_control(name)
+                
+        
     def reset_initial_values(self):
         """
         Resets all initial values in the network
@@ -1699,37 +1724,54 @@ class WaterNetworkModel(AbstractModel):
         self._prev_sim_time = None
 
         for name, node in self.nodes(Junction):
-            node.head = None
-            node.demand = None
-            node.leak_demand = None
-            node.leak_status = False
+            node._head = None
+            node._demand = None
+            node._leak_demand = None
+            node._leak_status = False
+            node._is_isolated = False
 
         for name, node in self.nodes(Tank):
-            node.head = node.init_level+node.elevation
-            node.demand = None
-            node.leak_demand = None
-            node.leak_status = False
+            node._head = node.init_level+node.elevation
+            node._prev_head = node.head
+            node._demand = None
+            node._leak_demand = None
+            node._leak_status = False
+            node._is_isolated = False
 
         for name, node in self.nodes(Reservoir):
-            node.head = node.head_timeseries.base_value
-            node.demand = None
-            node.leak_demand = None
+            node._head = None  # node.head_timeseries.base_value
+            node._demand = None
+            node._leak_demand = None
+            node._is_isolated = False
 
         for name, link in self.links(Pipe):
-            link.status = link.initial_status
+            link._user_status = link.initial_status
+            link._setting = link.initial_setting
+            link._internal_status = LinkStatus.Active
+            link._is_isolated = False
             link._flow = None
+            link._prev_setting = None
 
         for name, link in self.links(Pump):
-            link.status = link.initial_status
+            link._user_status = link.initial_status
+            link._internal_status = LinkStatus.Active
+            link._is_isolated = False
             link._flow = None
-            link.power = link._base_power
+            if isinstance(link, PowerPump):
+                link.power = link._base_power
             link._power_outage = LinkStatus.Open
+            link._prev_setting = None
 
         for name, link in self.links(Valve):
-            link.status = link.initial_status
+            link._user_status = link.initial_status
+            link._setting = link.initial_setting
+            link._internal_status = LinkStatus.Active
+            link._is_isolated = False
             link._flow = None
-            link.setting = link.initial_setting
             link._prev_setting = None
+
+        for name, control in self.controls():
+            control._reset()
 
     def read_inpfile(self, filename):
         """
@@ -1753,7 +1795,7 @@ class WaterNetworkModel(AbstractModel):
 
             By default, WNTR now uses EPANET version 2.2 for the EPANET simulator engine. Thus,
             The WaterNetworkModel will also write an EPANET 2.2 formatted INP file by default as well.
-            Because the PDA analysis options will break EPANET 2.0, the ``version`` option will allow
+            Because the PDD analysis options will break EPANET 2.0, the ``version`` option will allow
             the user to force EPANET 2.0 compatibility at the expense of pressured-dependent analysis 
             options being turned off.
 
@@ -2150,7 +2192,8 @@ class NodeRegistry(Registry):
             raise RuntimeError('node_type, '+str(node_type)+', not recognized.')
 
     def add_junction(self, name, base_demand=0.0, demand_pattern=None, 
-                     elevation=0.0, coordinates=None, demand_category=None):
+                     elevation=0.0, coordinates=None, demand_category=None,
+                     emitter_coeff=None, initial_quality=None):
         """
         Adds a junction to the water network model.
 
@@ -2164,9 +2207,14 @@ class NodeRegistry(Registry):
             Name of the demand pattern or the actual Pattern object
         elevation : float
             Elevation of the junction.
-        coordinates : tuple of floats
+        coordinates : tuple of floats, optional
             X-Y coordinates of the node location.
-                
+        demand_category : str, optional
+            Add a category to the **base** demand
+        emitter_ceoff : float, optional
+            Add an emitter at this node with the specified coefficient
+        initial_quality : float, optional
+            Initial quality at this junction
         """
         base_demand = float(base_demand)
         elevation = float(elevation)
@@ -2177,10 +2225,15 @@ class NodeRegistry(Registry):
         self[name] = junction
         if coordinates is not None:
             junction.coordinates = coordinates
+        if emitter_coeff is not None:
+            junction.emitter_coefficient = emitter_coeff
+        if initial_quality is not None:
+            junction.initial_quality = initial_quality
 
     def add_tank(self, name, elevation=0.0, init_level=3.048,
                  min_level=0.0, max_level=6.096, diameter=15.24,
-                 min_vol=0.0, vol_curve=None, coordinates=None):
+                 min_vol=0.0, vol_curve=None, overflow=False, 
+                 coordinates=None):
         """
         Adds a tank to the water network model.
 
@@ -2204,6 +2257,8 @@ class NodeRegistry(Registry):
         vol_curve : str, optional
             Name of a volume curve. The volume curve overrides the tank diameter
             and minimum volume.
+        overflow : bool, optional
+            Overflow indicator (allows "yes"/"no", True/False, 1/0; default False)
         coordinates : tuple of floats, optional
             X-Y coordinates of the node location.
             
@@ -2223,7 +2278,7 @@ class NodeRegistry(Registry):
             raise ValueError("Initial tank level must be greater than or equal to the tank minimum level.")
         if init_level > max_level:
             raise ValueError("Initial tank level must be less than or equal to the tank maximum level.")
-        if not vol_curve is None:
+        if vol_curve is not None and vol_curve != '*':
             if not isinstance(vol_curve, six.string_types):
                 raise ValueError('Volume curve name must be a string')
             elif not vol_curve in self._curve_reg.volume_curve_names:
@@ -2239,6 +2294,7 @@ class NodeRegistry(Registry):
                 raise ValueError('The volume curve ' + vol_curve + ' has a maximum value ({0:5.2f}) \n' +
                                  'less than the maximum level for tank "' + name + '" ({1:5.2f})\n' +
                                  'please correct the user input.'.format(vcurve[-1,0],max_level))
+
         tank = Tank(name, self)
         tank.elevation = elevation
         tank.init_level = init_level
@@ -2247,6 +2303,7 @@ class NodeRegistry(Registry):
         tank.diameter = diameter
         tank.min_vol = min_vol
         tank.vol_curve_name = vol_curve
+        tank.overflow = overflow
         self[name] = tank
         if coordinates is not None:
             tank.coordinates = coordinates
@@ -2496,7 +2553,7 @@ class LinkRegistry(Registry):
         pipe.roughness = roughness
         pipe.minor_loss = minor_loss
         pipe.initial_status = status
-        pipe.status = status
+        pipe._user_status = status
         pipe.cv = check_valve_flag
         self[name] = pipe
 
@@ -2575,23 +2632,23 @@ class LinkRegistry(Registry):
         if valve_type == 'PRV':
             valve = PRValve(name, start_node_name, end_node_name, self)
             valve.initial_setting = setting
-            valve.setting = setting
+            valve._setting = setting
         elif valve_type == 'PSV':
             valve = PSValve(name, start_node_name, end_node_name, self)
             valve.initial_setting = setting
-            valve.setting = setting
+            valve._setting = setting
         elif valve_type == 'PBV':
             valve = PBValve(name, start_node_name, end_node_name, self)
             valve.initial_setting = setting
-            valve.setting = setting
+            valve._setting = setting
         elif valve_type == 'FCV':
             valve = FCValve(name, start_node_name, end_node_name, self)
             valve.initial_setting = setting
-            valve.setting = setting
+            valve._setting = setting
         elif valve_type == 'TCV':
             valve = TCValve(name, start_node_name, end_node_name, self)
             valve.initial_setting = setting
-            valve.setting = setting
+            valve._setting = setting
         elif valve_type == 'GPV':
             valve = GPValve(name, start_node_name, end_node_name, self)
             valve.headloss_curve_name = setting

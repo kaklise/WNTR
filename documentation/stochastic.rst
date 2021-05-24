@@ -26,6 +26,8 @@ based on the failure probability of each pipe.
 		
 .. doctest::
 
+    >>> import numpy as np # doctest: +SKIP
+	
     >>> pipe_names = ['pipe1', 'pipe2', 'pipe3', 'pipe4']
     >>> failure_probability = [0.10, 0.20, 0.30, 0.40]
     >>> N = 2
@@ -35,6 +37,8 @@ based on the failure probability of each pipe.
 A `stochastic simulation example <https://github.com/USEPA/WNTR/blob/master/examples/stochastic_simulation.py>`_ provided with WNTR runs multiple realizations 
 of a pipe leak scenario where the location and duration are drawn from probability 
 distributions.
+
+.. _fragility_curves:
 
 Fragility curves
 ===============================
@@ -73,6 +77,8 @@ The following example defines a fragility curve with two damage states: Minor da
 .. doctest::
 
     >>> from scipy.stats import lognorm
+    >>> import wntr # doctest: +SKIP
+	
     >>> FC = wntr.scenario.FragilityCurve()
     >>> FC.add_state('Minor', 1, {'Default': lognorm(0.5,scale=0.2)})
     >>> FC.add_state('Major', 2, {'Default': lognorm(0.5,scale=0.5)}) 
@@ -109,6 +115,7 @@ For example, if the pipe has Major damage, a large leak might be defined at that
     
 .. doctest::
     
+    >>> wn = wntr.network.WaterNetworkModel('networks/Net3.inp') # doctest: +SKIP
     >>> wn = wntr.morph.scale_node_coordinates(wn, 1000)
     >>> epicenter = (32000,15000) # x,y location
     >>> magnitude = 6.5 # Richter scale
@@ -127,7 +134,7 @@ To plot the damage state on the network, the state (i.e., Major) can be converte
     >>> priority_map = FC.get_priority_map()
     >>> damage_value = damage_state.map(priority_map)
     >>> custom_cmp = wntr.graphics.custom_colormap(3, ['grey', 'royalblue', 'darkorange'])
-    >>> nodes, edges = wntr.graphics.plot_network(wn, link_attribute=damage_value, 
+    >>> ax = wntr.graphics.plot_network(wn, link_attribute=damage_value, 
     ...     node_size=0, link_width=2, link_cmap=custom_cmp, 
     ...     title='Damage state: 0=None, 1=Minor, 2=Major') 
    

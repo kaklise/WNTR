@@ -76,181 +76,7 @@ class WaterNetworkSimulator(object):
             raise RuntimeError('Node name ' + name + ' was not recognised as a junction, tank, reservoir, or leak.')
 
 
-def _plot_interactive_network(wn, title=None, node_size=8, link_width=2,
-                              figsize=None, round_ndigits=2, filename=None, auto_open=True):
-    """
-    Create an interactive scalable network graphic using networkx and plotly.
-
-    Parameters
-    ----------
-    wn : wntr WaterNetworkModel
-        A WaterNetworkModel object
-
-    title : str, optional
-        Plot title (default = None)
-
-    node_size : int, optional
-        Node size (default = 8)
-
-    link_width : int, optional
-        Link width (default = 1)
-
-    figsize: list, optional
-        Figure size in pixels, default= [700, 450]
-
-    round_ndigits : int, optional
-        Number of digits to round node values used in the label (default = 2)
-
-    filename : string, optional
-        HTML file name (default=None, temp-plot.html)
-    """
-    if figsize is None:
-        figsize = [1000, 700]
-
-    node_attributes = ['_is_isolated', 'head', 'demand']
-    link_attributes = ['status', '_is_isolated', 'flow']
-
-    # Graph
-    G = wn.get_graph()
-
-    open_edges = dict()
-    closed_edges = dict()
-    isolated_edges = dict()
-    for edge_dict in [open_edges, closed_edges, isolated_edges]:
-        edge_dict['x'] = list()
-        edge_dict['y'] = list()
-    for edge in G.edges:
-        x0, y0 = G.nodes[edge[0]]['pos']
-        x1, y1 = G.nodes[edge[1]]['pos']
-        link = wn.get_link(edge[2])
-        if link._is_isolated:
-            edge_dict = isolated_edges
-        elif link.status == LinkStatus.Opened or link.status == LinkStatus.Active:
-            edge_dict = open_edges
-        elif link.status == LinkStatus.Closed:
-            edge_dict = closed_edges
-        else:
-            raise ValueError('Unexpected link status: {0}'.format(str(link.status)))
-        edge_dict['x'] += tuple([x0, x1, None])
-        edge_dict['y'] += tuple([y0, y1, None])
-
-    open_edge_trace = plotly.graph_objs.Scatter(x=open_edges['x'], y=open_edges['y'], mode='lines',
-                                                line=dict(color='Blue', width=link_width))
-    closed_edge_trace = plotly.graph_objs.Scatter(x=closed_edges['x'], y=closed_edges['y'], mode='lines',
-                                                  line=dict(color='Yellow', width=link_width))
-    isolated_edge_trace = plotly.graph_objs.Scatter(x=isolated_edges['x'], y=isolated_edges['y'], mode='lines',
-                                                    line=dict(color='Red', width=link_width))
-
-    edge_name_trace = plotly.graph_objs.Scatter(x=[], y=[], text=[], hoverinfo='text', mode='markers',
-                                                marker=dict(size=1))
-    for edge in G.edges:
-        x0, y0 = G.nodes[edge[0]]['pos']
-        x1, y1 = G.nodes[edge[1]]['pos']
-        link = wn.get_link(edge[2])
-        edge_name_trace['x'] += tuple([0.5 * (x0 + x1)])
-        edge_name_trace['y'] += tuple([0.5 * (y0 + y1)])
-        link_text = str(link.link_type) + ' ' + str(link)
-        for _attr in link_attributes:
-            val = getattr(link, _attr)
-            if type(val) == float:
-                val = round(val, round_ndigits)
-            link_text += '<br />{0}: {1}'.format(_attr, str(val))
-        link_text += '<br />{0}: {1}'.format('x_coord', 0.5 * (x0 + x1))
-        link_text += '<br />{0}: {1}'.format('y_coord', 0.5 * (y0 + y1))
-        edge_name_trace['text'] += tuple([link_text])
-
-    # Create node trace
-    node_trace = plotly.graph_objs.Scatter(x=[], y=[], text=[], hoverinfo='text', mode='markers',
-                                           marker=dict(size=node_size, color='Black', line=dict(width=1)))
-    for node in G.nodes():
-        x, y = G.nodes[node]['pos']
-        node_trace['x'] += tuple([x])
-        node_trace['y'] += tuple([y])
-        _node = wn.get_node(node)
-        node_text = str(_node.node_type) + ' ' + str(_node)
-        for _attr in node_attributes:
-            val = getattr(_node, _attr)
-            if type(val) == float:
-                val = round(val, round_ndigits)
-            node_text += '<br />{0}: {1}'.format(_attr, str(val))
-        try:
-            if hasattr(_node, 'elevation'):
-                node_text += '<br />{0}: {1}'.format('pressure', round(_node.head-_node.elevation, round_ndigits))
-        except:
-            pass
-        node_text += '<br />{0}: {1}'.format('x_coord', x)
-        node_text += '<br />{0}: {1}'.format('y_coord', y)
-        node_trace['text'] += tuple([node_text])
-
-    # Create figure
-    data = [open_edge_trace, closed_edge_trace, isolated_edge_trace, edge_name_trace, node_trace]
-    layout = plotly.graph_objs.Layout(title=title,
-                                      titlefont=dict(size=16),
-                                      showlegend=False,
-                                      width=figsize[0],
-                                      height=figsize[1],
-                                      hovermode='closest',
-                                      margin=dict(b=20, l=5, r=5, t=40),
-                                      xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                                      yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
-
-    fig = plotly.graph_objs.Figure(data=data, layout=layout)
-    if filename:
-        plotly.offline.plot(fig, filename=filename, auto_open=auto_open)
-    else:
-        plotly.offline.plot(fig, auto_open=auto_open)
-
-
-def _write_DD_results_to_json_for_diagnostics(wn, res, filename):
-    d = dict()
-    mode = wn.options.hydraulic.demand_model
-    if mode in ['DD','DDA']:
-        demand_key = 'expected_demand'
-    elif mode in ['PDD','PDA']:
-        demand_key = 'demand'
-    else:
-        raise ValueError('Unexpected mode: {0}'.format(mode))
-
-    for t in res.node['head'].index:
-        d[t] = dict()
-        d[t]['head'] = dict()
-        d[t]['source_head'] = dict()
-        d[t][demand_key] = dict()
-        d[t]['flow'] = dict()
-        for col in res.node['head'].columns:
-            node = wn.get_node(col)
-            if node.node_type in {'Tank', 'Reservoir'}:
-                d[t]['source_head'][col] = float(res.node['head'].at[t, col])
-            else:
-                d[t]['head'][col] = float(res.node['head'].at[t, col])
-        for col in res.node['demand'].columns:
-            node = wn.get_node(col)
-            if node.node_type in {'Tank', 'Reservoir'}:
-                pass
-            else:
-                d[t][demand_key][col] = float(res.node['demand'].at[t, col])
-        for col in res.link['flowrate'].columns:
-            d[t]['flow'][col] = float(res.link['flowrate'].at[t, col])
-
-    f = open(filename, 'w')
-    json.dump(d, f)
-    f.close()
-
-
-def _write_status_to_json(wn, res, filename):
-    d = dict()
-
-    for t in res.link['status'].index:
-        d[t] = dict()
-        for col in res.link['status'].columns:
-            d[t][col] = int(res.link['status'].at[t, col])
-
-    f = open(filename, 'w')
-    json.dump(d, f)
-    f.close()
-
-
-class _DiagnosticsOptions(enum.IntEnum):
+class _DiagnosticsOptions(enum.IntEnum): # pragma: no cover
     plot_network = 1
     disable = 2
     run_until_time = 3
@@ -262,7 +88,7 @@ class _DiagnosticsOptions(enum.IntEnum):
     store_var_values_in_network = 9
 
 
-class _Diagnostics(object):
+class _Diagnostics(object): # pragma: no cover
     def __init__(self, wn, model, mode, enable=False):
         self.wn = wn
         self.model = model
@@ -284,7 +110,7 @@ class _Diagnostics(object):
             print('next step: ', next_step)
             selection = self.get_command()
             if selection == _DiagnosticsOptions.plot_network:
-                _plot_interactive_network(self.wn)
+                self._plot_interactive_network(self.wn)
                 self.run(last_step, next_step)
             elif selection == _DiagnosticsOptions.disable:
                 self.enabled = False
@@ -456,6 +282,182 @@ class _Diagnostics(object):
         self.mode = self._wn.options.hydraulic.demand_model
         wntr.sim.hydraulics.store_results_in_network(self.wn, self.model, self.mode)
 
+    @classmethod
+    def _plot_interactive_network(cls, wn, title=None, node_size=8, link_width=2,
+                                figsize=None, round_ndigits=2, filename=None, auto_open=True):
+        """
+        Create an interactive scalable network graphic using networkx and plotly.
+
+        Parameters
+        ----------
+        wn : wntr WaterNetworkModel
+            A WaterNetworkModel object
+
+        title : str, optional
+            Plot title (default = None)
+
+        node_size : int, optional
+            Node size (default = 8)
+
+        link_width : int, optional
+            Link width (default = 1)
+
+        figsize: list, optional
+            Figure size in pixels, default= [700, 450]
+
+        round_ndigits : int, optional
+            Number of digits to round node values used in the label (default = 2)
+
+        filename : string, optional
+            HTML file name (default=None, temp-plot.html)
+        """
+        if figsize is None:
+            figsize = [1000, 700]
+
+        node_attributes = ['_is_isolated', 'head', 'demand']
+        link_attributes = ['status', '_is_isolated', 'flow']
+
+        # Graph
+        G = wn.get_graph()
+
+        open_edges = dict()
+        closed_edges = dict()
+        isolated_edges = dict()
+        for edge_dict in [open_edges, closed_edges, isolated_edges]:
+            edge_dict['x'] = list()
+            edge_dict['y'] = list()
+        for edge in G.edges:
+            x0, y0 = G.nodes[edge[0]]['pos']
+            x1, y1 = G.nodes[edge[1]]['pos']
+            link = wn.get_link(edge[2])
+            if link._is_isolated:
+                edge_dict = isolated_edges
+            elif link.status == LinkStatus.Opened or link.status == LinkStatus.Active:
+                edge_dict = open_edges
+            elif link.status == LinkStatus.Closed:
+                edge_dict = closed_edges
+            else:
+                raise ValueError('Unexpected link status: {0}'.format(str(link.status)))
+            edge_dict['x'] += tuple([x0, x1, None])
+            edge_dict['y'] += tuple([y0, y1, None])
+
+        open_edge_trace = plotly.graph_objs.Scatter(x=open_edges['x'], y=open_edges['y'], mode='lines',
+                                                    line=dict(color='Blue', width=link_width))
+        closed_edge_trace = plotly.graph_objs.Scatter(x=closed_edges['x'], y=closed_edges['y'], mode='lines',
+                                                    line=dict(color='Yellow', width=link_width))
+        isolated_edge_trace = plotly.graph_objs.Scatter(x=isolated_edges['x'], y=isolated_edges['y'], mode='lines',
+                                                        line=dict(color='Red', width=link_width))
+
+        edge_name_trace = plotly.graph_objs.Scatter(x=[], y=[], text=[], hoverinfo='text', mode='markers',
+                                                    marker=dict(size=1))
+        for edge in G.edges:
+            x0, y0 = G.nodes[edge[0]]['pos']
+            x1, y1 = G.nodes[edge[1]]['pos']
+            link = wn.get_link(edge[2])
+            edge_name_trace['x'] += tuple([0.5 * (x0 + x1)])
+            edge_name_trace['y'] += tuple([0.5 * (y0 + y1)])
+            link_text = str(link.link_type) + ' ' + str(link)
+            for _attr in link_attributes:
+                val = getattr(link, _attr)
+                if type(val) == float:
+                    val = round(val, round_ndigits)
+                link_text += '<br />{0}: {1}'.format(_attr, str(val))
+            link_text += '<br />{0}: {1}'.format('x_coord', 0.5 * (x0 + x1))
+            link_text += '<br />{0}: {1}'.format('y_coord', 0.5 * (y0 + y1))
+            edge_name_trace['text'] += tuple([link_text])
+
+        # Create node trace
+        node_trace = plotly.graph_objs.Scatter(x=[], y=[], text=[], hoverinfo='text', mode='markers',
+                                            marker=dict(size=node_size, color='Black', line=dict(width=1)))
+        for node in G.nodes():
+            x, y = G.nodes[node]['pos']
+            node_trace['x'] += tuple([x])
+            node_trace['y'] += tuple([y])
+            _node = wn.get_node(node)
+            node_text = str(_node.node_type) + ' ' + str(_node)
+            for _attr in node_attributes:
+                val = getattr(_node, _attr)
+                if type(val) == float:
+                    val = round(val, round_ndigits)
+                node_text += '<br />{0}: {1}'.format(_attr, str(val))
+            try:
+                if hasattr(_node, 'elevation'):
+                    node_text += '<br />{0}: {1}'.format('pressure', round(_node.head-_node.elevation, round_ndigits))
+            except:
+                pass
+            node_text += '<br />{0}: {1}'.format('x_coord', x)
+            node_text += '<br />{0}: {1}'.format('y_coord', y)
+            node_trace['text'] += tuple([node_text])
+
+        # Create figure
+        data = [open_edge_trace, closed_edge_trace, isolated_edge_trace, edge_name_trace, node_trace]
+        layout = plotly.graph_objs.Layout(title=title,
+                                        titlefont=dict(size=16),
+                                        showlegend=False,
+                                        width=figsize[0],
+                                        height=figsize[1],
+                                        hovermode='closest',
+                                        margin=dict(b=20, l=5, r=5, t=40),
+                                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+
+        fig = plotly.graph_objs.Figure(data=data, layout=layout)
+        if filename:
+            plotly.offline.plot(fig, filename=filename, auto_open=auto_open)
+        else:
+            plotly.offline.plot(fig, auto_open=auto_open)
+
+    @classmethod
+    def _write_DD_results_to_json_for_diagnostics(cls, wn, res, filename):
+        d = dict()
+        mode = wn.options.hydraulic.demand_model
+        if mode in ['DD','DDA']:
+            demand_key = 'expected_demand'
+        elif mode in ['PDD','PDA']:
+            demand_key = 'demand'
+        else:
+            raise ValueError('Unexpected mode: {0}'.format(mode))
+
+        for t in res.node['head'].index:
+            d[t] = dict()
+            d[t]['head'] = dict()
+            d[t]['source_head'] = dict()
+            d[t][demand_key] = dict()
+            d[t]['flow'] = dict()
+            for col in res.node['head'].columns:
+                node = wn.get_node(col)
+                if node.node_type in {'Tank', 'Reservoir'}:
+                    d[t]['source_head'][col] = float(res.node['head'].at[t, col])
+                else:
+                    d[t]['head'][col] = float(res.node['head'].at[t, col])
+            for col in res.node['demand'].columns:
+                node = wn.get_node(col)
+                if node.node_type in {'Tank', 'Reservoir'}:
+                    pass
+                else:
+                    d[t][demand_key][col] = float(res.node['demand'].at[t, col])
+            for col in res.link['flowrate'].columns:
+                d[t]['flow'][col] = float(res.link['flowrate'].at[t, col])
+
+        f = open(filename, 'w')
+        json.dump(d, f)
+        f.close()
+
+    @classmethod
+    def _write_status_to_json(cls, wn, res, filename):
+        d = dict()
+
+        for t in res.link['status'].index:
+            d[t] = dict()
+            for col in res.link['status'].columns:
+                d[t][col] = int(res.link['status'].at[t, col])
+
+        f = open(filename, 'w')
+        json.dump(d, f)
+        f.close()
+
+
+
 
 class WNTRSimulator(WaterNetworkSimulator):
     """
@@ -503,7 +505,7 @@ class WNTRSimulator(WaterNetworkSimulator):
         self._backup_solver = None
         self._solver_options = dict()
         self._backup_solver_options = dict()
-        self._convergence_error = True
+        self._convergence_error = False
 
         # other attributes
         self._hydraulic_timestep = None
@@ -525,7 +527,7 @@ class WNTRSimulator(WaterNetworkSimulator):
         m = int(s/60)
         s -= m*60
         s = int(s)
-        return str(h)+':'+str(m)+':'+str(s)
+        return '{:02}:{:02}:{:02}'.format(h, m, s)
 
     def _setup_sim_options(self, solver, backup_solver, solver_options, backup_solver_options, convergence_error):
         self._report_timestep = self._wn.options.time.report_timestep
@@ -791,7 +793,7 @@ class WNTRSimulator(WaterNetworkSimulator):
                 logger.debug('\t{0}.{1} changed to {2}'.format(obj, attr, getattr(obj, attr)))
 
     def run_sim(self, solver=NewtonSolver, backup_solver=None, solver_options=None,
-                backup_solver_options=None, convergence_error=True, HW_approx='default',
+                backup_solver_options=None, convergence_error=False, HW_approx='default',
                 diagnostics=False):
         """
         Run an extended period simulation (hydraulics only).
@@ -805,19 +807,19 @@ class WNTRSimulator(WaterNetworkSimulator):
         solver_options: dict
             Solver options are specified using the following dictionary keys:
 
-            * MAXITER: the maximum number of iterations for each hydraulic solve (each timestep and trial) (default = 100)
+            * MAXITER: the maximum number of iterations for each hydraulic solve (each timestep and trial) (default = 3000)
             * TOL: tolerance for the hydraulic equations (default = 1e-6)
             * BT_RHO: the fraction by which the step length is reduced at each iteration of the line search (default = 0.5)
-            * BT_MAXITER: the maximum number of iterations for each line search (default = 20)
+            * BT_MAXITER: the maximum number of iterations for each line search (default = 100)
             * BACKTRACKING: whether or not to use a line search (default = True)
             * BT_START_ITER: the newton iteration at which a line search should start being used (default = 2)
             * THREADS: the number of threads to use in constraint and jacobian computations
         backup_solver_options: dict
         convergence_error: bool (optional)
             If convergence_error is True, an error will be raised if the
-            simulation does not converge. If convergence_error is False,
-            a warning will be issued and results.error_code will be set to 2
-            if the simulation does not converge.  Default = True.
+            simulation does not converge. If convergence_error is False, partial results are returned, 
+            a warning will be issued, and results.error_code will be set to 0
+            if the simulation does not converge.  Default = False.
         HW_approx: str
             Specifies which Hazen-Williams headloss approximation to use. Options are 'default' and 'piecewise'. Please
             see the WNTR documentation on hydraulics for details.
@@ -897,10 +899,10 @@ class WNTRSimulator(WaterNetworkSimulator):
                 solver_status, mesg, iter_count = _solver_helper(self._model, self._backup_solver, self._backup_solver_options)
             if solver_status == 0:
                 if self._convergence_error:
-                    logger.error('Simulation did not converge. ' + mesg)
-                    raise RuntimeError('Simulation did not converge. ' + mesg)
-                warnings.warn('Simulation did not converge. ' + mesg)
-                logger.warning('Simulation did not converge at time ' + str(self._get_time()) + '. ' + mesg)
+                    logger.error('Simulation did not converge at time ' + self._get_time() + '. ' + mesg) 
+                    raise RuntimeError('Simulation did not converge at time ' + self._get_time() + '. ' + mesg)
+                warnings.warn('Simulation did not converge at time ' + self._get_time() + '. ' + mesg)
+                logger.warning('Simulation did not converge at time ' + self._get_time() + '. ' + mesg)
                 results.error_code = wntr.sim.results.ResultsStatus.error
                 diagnostics.run(last_step='solve', next_step='break')
                 break
@@ -922,11 +924,11 @@ class WNTRSimulator(WaterNetworkSimulator):
                 trial += 1
                 if trial > max_trials:
                     if convergence_error:
-                        logger.error('Exceeded maximum number of trials.')
-                        raise RuntimeError('Exceeded maximum number of trials.')
+                        logger.error('Exceeded maximum number of trials at time ' + self._get_time() + '. ') 
+                        raise RuntimeError('Exceeded maximum number of trials at time ' + self._get_time() + '. ' ) 
                     results.error_code = wntr.sim.results.ResultsStatus.error
-                    warnings.warn('Exceeded maximum number of trials.')
-                    logger.warning('Exceeded maximum number of trials at time %s', self._get_time())
+                    warnings.warn('Exceeded maximum number of trials at time ' + self._get_time() + '. ') 
+                    logger.warning('Exceeded maximum number of trials at time ' + self._get_time() + '. ' ) 
                     break
                 continue
 

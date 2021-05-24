@@ -11,7 +11,7 @@ Water network options are stored in an :class:`~wntr.network.options.Options`
 class which divides options into the following sections:
 
 * :class:`~wntr.network.options.TimeOptions`: Options related to simulation and model timing
-* :class:`~wntr.network.options.HydraulicOptions`: Options related to the hydraulic model, including hydraulics
+* :class:`~wntr.network.options.HydraulicOptions`: Options related to hydraulic modeling
 * :class:`~wntr.network.options.QualityOptions`: Options related to water quality modeling
 * :class:`~wntr.network.options.ReactionOptions`: Options related to water quality reactions
 * :class:`~wntr.network.options.EnergyOptions`: Options related to energy calculations
@@ -55,7 +55,8 @@ Options can be modified, as shown in the example below.
     
     >>> wn.options.time.duration = 86400
     >>> wn.options.hydraulic.demand_model = 'PDD'
-    
+    >>> wn.options.hydraulic.required_pressure = 21.097 # 30 psi = 21.097 m
+	
 Note that EPANET 2.0.12 does not use the demand model, minimum pressure, 
 required pressure, or pressure exponent from the hydraulic section.
 Options that directly apply to hydraulic simulation that are not used in the

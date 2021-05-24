@@ -251,6 +251,9 @@ class ControlCondition(six.with_metaclass(abc.ABCMeta, object)):
     def __init__(self):
         self._backtrack = 0
 
+    def _reset(self):
+        pass
+
     @abc.abstractmethod
     def requires(self):
         """
@@ -756,6 +759,9 @@ class TankLevelCondition(ValueCondition):
         self._last_value = getattr(self._source_obj, self._source_attr)  
 
 
+    def _reset(self):
+        self._last_value = getattr(self._source_obj, self._source_attr)  # this is used to see if backtracking is needed
+
     def _compare(self, other):
         """
         Parameters
@@ -953,6 +959,10 @@ class OrCondition(ControlCondition):
                 logger.warning('Using Comparison.eq with {0} will probably not work!'.format(type(cond2)))
                 warnings.warn('Using Comparison.eq with {0} will probably not work!'.format(type(cond2)))
 
+    def _reset(self):
+        self._condition_1._reset()
+        self._condition_2._reset()
+
     def _compare(self, other):
         """
         Parameters
@@ -1014,6 +1024,10 @@ class AndCondition(ControlCondition):
             if cond2._relation is Comparison.eq:
                 logger.warning('Using Comparison.eq with {0} will probably not work!'.format(type(cond2)))
                 warnings.warn('Using Comparison.eq with {0} will probably not work!'.format(type(cond2)))
+
+    def _reset(self):
+        self._condition_1._reset()
+        self._condition_2._reset()
 
     def _compare(self, other):
         """
@@ -1690,6 +1704,13 @@ class ControlAction(BaseControlAction):
         self._target_obj = target_obj
         self._attribute = attribute
         self._value = value
+        self._private_attribute = attribute
+        if attribute == 'status':
+            self._private_attribute = '_user_status'
+        elif attribute == 'leak_status':
+            self._private_attribute = '_leak_status'
+        elif attribute == 'setting':
+            self._private_attribute = '_setting'
 
     def requires(self):
         return OrderedSet([self._target_obj])
@@ -1709,7 +1730,7 @@ class ControlAction(BaseControlAction):
         return self._value
 
     def run_control_action(self):
-        setattr(self._target_obj, self._attribute, self._value)
+        setattr(self._target_obj, self._private_attribute, self._value)
         self.notify()
 
     def target(self):
@@ -1845,6 +1866,9 @@ class ControlBase(six.with_metaclass(abc.ABCMeta, object)):
             return 'Rule'
         else:
             return 'Control'
+
+    def _reset(self):
+        self._condition._reset()
 
     @property
     def condition(self):

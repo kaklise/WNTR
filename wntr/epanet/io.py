@@ -58,8 +58,8 @@ _JUNC_LABEL = '{:21} {:>12s} {:>12s} {:24}\n'
 _RES_ENTRY = ' {name:20s} {head:15.11g} {pat:>24s} {com:>3s}\n'
 _RES_LABEL = '{:21s} {:>20s} {:>24s}\n'
 
-_TANK_ENTRY = ' {name:20s} {elev:15.11g} {initlev:15.11g} {minlev:15.11g} {maxlev:15.11g} {diam:15.11g} {minvol:15.11g} {curve:20s} {com:>3s}\n'
-_TANK_LABEL = '{:21s} {:>20s} {:>20s} {:>20s} {:>20s} {:>20s} {:>20s} {:20s}\n'
+_TANK_ENTRY = ' {name:20s} {elev:15.11g} {initlev:15.11g} {minlev:15.11g} {maxlev:15.11g} {diam:15.11g} {minvol:15.11g} {curve:20s} {overflow:20s} {com:>3s}\n'
+_TANK_LABEL = '{:21s} {:>20s} {:>20s} {:>20s} {:>20s} {:>20s} {:>20s} {:20s} {:20s}\n'
 
 _PIPE_ENTRY = ' {name:20s} {node1:20s} {node2:20s} {len:15.11g} {diam:15.11g} {rough:15.11g} {mloss:15.11g} {status:>20s} {com:>3s}\n'
 _PIPE_LABEL = '{:21s} {:20s} {:20s} {:>20s} {:>20s} {:>20s} {:>20s} {:>20s}\n'
@@ -120,7 +120,8 @@ def _str_time_to_sec(s):
 
     Returns
     -------
-     Integer value of time in seconds.
+    int
+        Integer value of time in seconds.
     """
     pattern1 = re.compile(r'^(\d+):(\d+):(\d+)$')
     time_tuple = pattern1.search(s)
@@ -284,6 +285,15 @@ class InpFile(object):
                 elif line.startswith('['):
                     vals = line.split(None, 1)
                     sec = vals[0].upper()
+                    # Add handlers to deal with extra 'S'es (or missing 'S'es) in INP file
+                    if sec not in _INP_SECTIONS:
+                        trsec = sec.replace(']','S]')
+                        if trsec in _INP_SECTIONS:
+                            sec = trsec
+                    if sec not in _INP_SECTIONS:
+                        trsec = sec.replace('S]',']')
+                        if trsec in _INP_SECTIONS:
+                            sec = trsec
                     edata['sec'] = sec
                     if sec in _INP_SECTIONS:
                         section = sec
@@ -407,10 +417,14 @@ class InpFile(object):
         units : str, int or FlowUnits
             Name of the units for the EPANET INP file to be written in.
         version : float, {2.0, **2.2**}
-            Defaults to 2.2; use 2.0 to guarantee backward compatability, but this will turn off PDA mode 
-            and supress the writing of other EPANET 2.2-specific options. If PDA mode is specified, a 
+            Defaults to 2.2; use 2.0 to guarantee backward compatability, but this will turn off PDD mode 
+            and supress the writing of other EPANET 2.2-specific options. If PDD mode is specified, a 
             warning will be issued.
-
+        force_coordinates : bool
+            This only applies if `self.options.graphics.map_filename` is not `None`,
+            and will force the COORDINATES section to be written even if a MAP file is
+            provided. False by default, but coordinates **are** written by default since
+            the MAP file is `None` by default.
 		"""
 
         if not isinstance(wn, WaterNetworkModel):
@@ -435,7 +449,7 @@ class InpFile(object):
             self._write_title(f, wn)
             self._write_junctions(f, wn)
             self._write_reservoirs(f, wn)
-            self._write_tanks(f, wn)
+            self._write_tanks(f, wn, version=version)
             self._write_pipes(f, wn)
             self._write_pumps(f, wn)
             self._write_valves(f, wn)
@@ -585,17 +599,32 @@ class InpFile(object):
             current = line.split()
             if current == []:
                 continue
-            if len(current) == 8:  # Volume curve provided
+            volume = None
+            if len(current) >= 8:  # Volume curve provided
+                volume = float(current[6])
                 curve_name = current[7]
-                curve_points = []
-                for point in self.curves[curve_name]:
-                    x = to_si(self.flow_units, point[0], HydParam.Length)
-                    y = to_si(self.flow_units, point[1], HydParam.Volume)
-                    curve_points.append((x, y))
-                self.wn.add_curve(curve_name, 'VOLUME', curve_points)
+                if curve_name == '*':
+                    curve_name = None
+                else:
+                    curve_points = []
+                    for point in self.curves[curve_name]:
+                        x = to_si(self.flow_units, point[0], HydParam.Length)
+                        y = to_si(self.flow_units, point[1], HydParam.Volume)
+                        curve_points.append((x, y))
+                    self.wn.add_curve(curve_name, 'VOLUME', curve_points)
 #                curve = self.wn.get_curve(curve_name)
+                if len(current) == 9:
+                    overflow = current[8]
+                else:
+                    overflow = False
             elif len(current) == 7:
                 curve_name = None
+                overflow = False
+                volume = float(current[6])
+            elif len(current) == 6:
+                curve_name = None
+                overflow = False
+                volume = 0.0
             else:
                 raise RuntimeError('Tank entry format not recognized.')
             self.wn.add_tank(current[0],
@@ -604,13 +633,17 @@ class InpFile(object):
                         to_si(self.flow_units, float(current[3]), HydParam.Length),
                         to_si(self.flow_units, float(current[4]), HydParam.Length),
                         to_si(self.flow_units, float(current[5]), HydParam.TankDiameter),
-                        to_si(self.flow_units, float(current[6]), HydParam.Volume),
-                        curve_name)
+                        to_si(self.flow_units, float(volume), HydParam.Volume),
+                        curve_name, overflow)
 
-    def _write_tanks(self, f, wn):
+    def _write_tanks(self, f, wn, version=2.2):
         f.write('[TANKS]\n'.encode('ascii'))
-        f.write(_TANK_LABEL.format(';ID', 'Elevation', 'Init Level', 'Min Level', 'Max Level',
-                                   'Diameter', 'Min Volume', 'Volume Curve').encode('ascii'))
+        if version != 2.2:
+            f.write(_TANK_LABEL.format(';ID', 'Elevation', 'Init Level', 'Min Level', 'Max Level',
+                                       'Diameter', 'Min Volume', 'Volume Curve','').encode('ascii'))
+        else:
+            f.write(_TANK_LABEL.format(';ID', 'Elevation', 'Init Level', 'Min Level', 'Max Level',
+                            'Diameter', 'Min Volume', 'Volume Curve','Overflow').encode('ascii'))
         nnames = list(wn.tank_name_list)
         # nnames.sort()
         for tank_name in nnames:
@@ -623,9 +656,15 @@ class InpFile(object):
                  'diam': from_si(self.flow_units, tank.diameter, HydParam.TankDiameter),
                  'minvol': from_si(self.flow_units, tank.min_vol, HydParam.Volume),
                  'curve': '',
+                 'overflow': '',
                  'com': ';'}
             if tank.vol_curve is not None:
                 E['curve'] = tank.vol_curve.name
+            if version ==2.2:
+                if tank.overflow:
+                    E['overflow'] = 'YES'
+                    if tank.vol_curve is None:
+                        E['curve'] = '*'
             f.write(_TANK_ENTRY.format(**E).encode('ascii'))
         f.write('\n'.encode('ascii'))
 
@@ -635,25 +674,32 @@ class InpFile(object):
             current = line.split()
             if current == []:
                 continue
-            if current[7].upper() == 'CV':
-                self.wn.add_pipe(current[0],
-                            current[1],
-                            current[2],
-                            to_si(self.flow_units, float(current[3]), HydParam.Length),
-                            to_si(self.flow_units, float(current[4]), HydParam.PipeDiameter),
-                            float(current[5]),
-                            float(current[6]),
-                            LinkStatus.Open,
-                            True)
-            else:
-                self.wn.add_pipe(current[0],
-                            current[1],
-                            current[2],
-                            to_si(self.flow_units, float(current[3]), HydParam.Length),
-                            to_si(self.flow_units, float(current[4]), HydParam.PipeDiameter),
-                            float(current[5]),
-                            float(current[6]),
-                            LinkStatus[current[7].upper()])
+            if len(current) == 8:
+                minor_loss = float(current[6])
+                if current[7].upper() == 'CV':
+                    link_status = LinkStatus.Open
+                    check_valve_flag = True
+                else:
+                    link_status = LinkStatus[current[7].upper()]
+                    check_valve_flag = False
+            elif len(current) == 7:
+                minor_loss = float(current[6])
+                link_status = LinkStatus.Open
+                check_valve_flag = False
+            elif len(current) == 6:
+                minor_loss = 0.
+                link_status = LinkStatus.Open
+                check_valve_flag = False
+
+            self.wn.add_pipe(current[0],
+                        current[1],
+                        current[2],
+                        to_si(self.flow_units, float(current[3]), HydParam.Length),
+                        to_si(self.flow_units, float(current[4]), HydParam.PipeDiameter),
+                        float(current[5]),
+                        minor_loss,
+                        link_status,
+                        check_valve_flag)
 
     def _write_pipes(self, f, wn):
         f.write('[PIPES]\n'.encode('ascii'))
@@ -810,17 +856,17 @@ class InpFile(object):
                  'node2': valve.end_node_name,
                  'diam': from_si(self.flow_units, valve.diameter, HydParam.PipeDiameter),
                  'vtype': valve.valve_type,
-                 'set': valve._initial_setting,
+                 'set': valve._setting,
                  'mloss': valve.minor_loss,
                  'com': ';'}
             valve_type = valve.valve_type
             formatter = _VALVE_ENTRY
             if valve_type in ['PRV', 'PSV', 'PBV']:
-                valve_set = from_si(self.flow_units, valve._initial_setting, HydParam.Pressure)
+                valve_set = from_si(self.flow_units, valve._setting, HydParam.Pressure)
             elif valve_type == 'FCV':
-                valve_set = from_si(self.flow_units, valve._initial_setting, HydParam.Flow)
+                valve_set = from_si(self.flow_units, valve._setting, HydParam.Flow)
             elif valve_type == 'TCV':
-                valve_set = valve._initial_setting
+                valve_set = valve._setting
             elif valve_type == 'GPV':
                 valve_set = valve.headloss_curve_name
                 formatter = _GPV_ENTRY
@@ -835,7 +881,7 @@ class InpFile(object):
             if current == []:
                 continue
             junction = self.wn.get_node(current[0])
-            junction.emitter_coefficient = to_si(self.flow_units, float(current[1]), HydParam.Flow)
+            junction.emitter_coefficient = to_si(self.flow_units, float(current[1]), HydParam.EmitterCoeff)
 
     def _write_emitters(self, f, wn):
         f.write('[EMITTERS]\n'.encode('ascii'))
@@ -847,7 +893,7 @@ class InpFile(object):
         for junction_name in njunctions:
             junction = wn.nodes[junction_name]
             if junction.emitter_coefficient:
-                val = from_si(self.flow_units, junction.emitter_coefficient, HydParam.Flow)
+                val = from_si(self.flow_units, junction.emitter_coefficient, HydParam.EmitterCoeff)
                 f.write(entry.format(junction_name, str(val)).encode('ascii'))
         f.write('\n'.encode('ascii'))
 
@@ -1036,7 +1082,7 @@ class InpFile(object):
                     current[1].upper() == 'ACTIVE'):
                 new_status = LinkStatus[current[1].upper()]
                 link.initial_status = new_status
-                link.status = new_status
+                link._user_status = new_status
             else:
                 if isinstance(link, wntr.network.Valve):
                     new_status = LinkStatus.Active
@@ -1054,7 +1100,7 @@ class InpFile(object):
                     setting = float(current[1])
 #                link.setting = setting
                 link.initial_setting = setting
-                link.status = new_status
+                link._user_status = new_status
                 link.initial_status = new_status
 
     def _write_status(self, f, wn):
@@ -1335,6 +1381,8 @@ class InpFile(object):
         for text, all_control in wn.controls():
             entry = '{}\n'
             if all_control.epanet_control_type == _ControlType.rule:
+                if all_control.name == '':
+                    all_control._name = text
                 rule = _EpanetRule('blah', self.flow_units, self.mass_units)
                 rule.from_if_then_else(all_control)
                 f.write(entry.format(str(rule)).encode('ascii'))
@@ -1684,11 +1732,13 @@ class InpFile(object):
                     if len(words) > 2:
                         opts.hydraulic.unbalanced_value = int(words[2])
                 elif key == 'MINIMUM':
-                    opts.hydraulic.minimum_pressure = float(words[2])
+                    minimum_pressure = to_si(self.flow_units, float(words[2]), HydParam.Pressure)
+                    opts.hydraulic.minimum_pressure = minimum_pressure
                 elif key == 'REQUIRED':
-                    opts.hydraulic.required_pressure = float(words[2])
+                    required_pressure = to_si(self.flow_units, float(words[2]), HydParam.Pressure)
+                    opts.hydraulic.required_pressure = required_pressure
                 elif key == 'PRESSURE':
-                    opts.hydraulic.pressure_exponenet = float(words[2])
+                    opts.hydraulic.pressure_exponent = float(words[2])
                 elif key == 'PATTERN':
                     opts.hydraulic.pattern = words[1]
                 elif key == 'DEMAND':
@@ -1734,18 +1784,6 @@ class InpFile(object):
                 raise RuntimeError('opts.report_timestep must be greater than or equal to opts.hydraulic_timestep.')
             if opts.time.report_timestep % opts.time.hydraulic_timestep != 0:
                 raise RuntimeError('opts.report_timestep must be a multiple of opts.hydraulic_timestep')
-        
-        # Convert EPANET 2.2 minimum/required pressures
-        if opts.hydraulic.minimum_pressure != 0.0:
-            minimum_pressure = to_si(self.flow_units, opts.hydraulic.minimum_pressure, HydParam.Pressure)
-            opts.hydraulic.minimum_pressure = minimum_pressure
-            for junc in self.wn.junctions():
-                junc.minimum_pressure = minimum_pressure
-        if opts.hydraulic.required_pressure != 0.07:
-            required_pressure = to_si(self.flow_units, opts.hydraulic.required_pressure, HydParam.Pressure)
-            opts.hydraulic.required_pressure = required_pressure
-            for junc in self.wn.junctions():
-                junc.required_pressure = required_pressure
 
     def _write_options(self, f, wn, version=2.2):
         f.write('[OPTIONS]\n'.encode('ascii'))
@@ -1777,7 +1815,7 @@ class InpFile(object):
             if wn.options.hydraulic.flowchange != 0:
                 f.write(entry_float.format('FLOWCHANGE', wn.options.hydraulic.flowchange).encode('ascii'))
 
-        # EPANET 2.0 OPTIONS
+        # EPANET 2.x OPTIONS
         if wn.options.hydraulic.damplimit != 0:
             f.write(entry_float.format('DAMPLIMIT', wn.options.hydraulic.damplimit).encode('ascii'))
 
@@ -1794,20 +1832,17 @@ class InpFile(object):
         # EPANET 2.2 OPTIONS
         if version == 2.0:
             if wn.options.hydraulic.demand_model in ['PDA', 'PDD']: 
-                logger.critical('You have specified a PDA analysis using EPANET 2.0. This is not supported in EPANET 2.0. The analysis will default to DDA mode.')
+                logger.critical('You have specified a PDD analysis using EPANET 2.0. This is not supported in EPANET 2.0. The analysis will default to DD mode.')
         else:
-            if wn.options.hydraulic.demand_model is not None: 
+            if wn.options.hydraulic.demand_model in ['PDA', 'PDD']: 
                 f.write('{:20s} {}\n'.format('DEMAND MODEL', wn.options.hydraulic.demand_model).encode('ascii'))
 
-            if wn.options.hydraulic.minimum_pressure != 0.0:
                 minimum_pressure = from_si(self.flow_units, wn.options.hydraulic.minimum_pressure, HydParam.Pressure)
                 f.write('{:20s} {:.2f}\n'.format('MINIMUM PRESSURE', minimum_pressure).encode('ascii'))
 
-            if wn.options.hydraulic.required_pressure != 0.07:
                 required_pressure = from_si(self.flow_units, wn.options.hydraulic.required_pressure, HydParam.Pressure)
                 f.write('{:20s} {:.2f}\n'.format('REQUIRED PRESSURE', required_pressure).encode('ascii'))
 
-            if wn.options.hydraulic.pressure_exponent != 0.5:
                 f.write('{:20s} {}\n'.format('PRESSURE EXPONENT', wn.options.hydraulic.pressure_exponent).encode('ascii'))
 
         # EPANET 2.0+ OPTIONS
@@ -2377,10 +2412,13 @@ class _EpanetRule(object):
                     value = to_si(self.inp_units, value, HydParam.Pressure)
                 elif attr.lower() in ['setting']:
                     link = model.get_link(words[2])
-                    if link.valve_type.upper() in ['PRV', 'PBV', 'PSV']:
-                        value = to_si(self.inp_units, value, HydParam.Pressure)
-                    elif link.valve_type.upper() in ['FCV']:
-                        value = to_si(self.inp_units, value, HydParam.Flow)
+                    if isinstance(link, wntr.network.Pump):
+                        value = value
+                    elif isinstance(link, wntr.network.Valve):
+                        if link.valve_type.upper() in ['PRV', 'PBV', 'PSV']:
+                            value = to_si(self.inp_units, value, HydParam.Pressure)
+                        elif link.valve_type.upper() in ['FCV']:
+                            value = to_si(self.inp_units, value, HydParam.Flow)
                 if words[1].upper() in ['NODE', 'JUNCTION', 'RESERVOIR', 'TANK']:
                     condition = ValueCondition(model.get_node(words[2]), words[3].lower(), words[4].lower(), value)
                 elif words[1].upper() in ['LINK', 'PIPE', 'PUMP', 'VALVE']:
@@ -2528,6 +2566,15 @@ class BinFile(object):
         self.keep_energy = energy
         self.keep_statistics = statistics
 
+    def _get_time(self, t):
+        s = int(t)
+        h = int(s/3600)
+        s -= h*3600
+        m = int(s/60)
+        s -= m*60
+        s = int(s)
+        return '{:02}:{:02}:{:02}'.format(h, m, s)
+    
     def setup_ep_results(self, times, nodes, links, result_types=None):
         """Set up the results object (or file, etc.) for save_ep_line() calls to use.
 
@@ -2645,13 +2692,18 @@ class BinFile(object):
         pass
 
 #    @run_lineprofile()
-    def read(self, filename, custom_handlers=False):
+    def read(self, filename, convergence_error=False, custom_handlers=False):
         """Read a binary file and create a results object.
 
         Parameters
         ----------
         filename : str
             An EPANET BIN output file
+        convergence_error: bool (optional)
+            If convergence_error is True, an error will be raised if the
+            simulation does not converge. If convergence_error is False, partial results are returned, 
+            a warning will be issued, and results.error_code will be set to 0
+            if the simulation does not converge.  Default = False.
         custom_handlers : bool, optional
             If true, then the the custom, by-line handlers will be used. (:func:`~save_ep_line`, 
             :func:`~setup_ep_results`, :func:`~finalize_save`, etc.) Otherwise read will use
@@ -2762,7 +2814,7 @@ class BinFile(object):
             self.peak_energy = peakenergy
 
             logger.debug('... read EP simulation data ...')
-            reporttimes = np.arange(reportstart, duration+reportstep, reportstep)
+            reporttimes = np.arange(reportstart, duration+reportstep-(duration%reportstep), reportstep)
             nrptsteps = len(reporttimes)
             statsN = nrptsteps
             if statsflag in [StatisticsType.Maximum, StatisticsType.Minimum, StatisticsType.Range]:
@@ -2813,7 +2865,7 @@ class BinFile(object):
             self.save_network_desc_line('link_start', pd.Series(data=names[linkstart-1], index=linknames, copy=True))
             self.save_network_desc_line('link_end', pd.Series(data=names[linkend-1], index=linknames, copy=True))
             """
-            if custom_handlers is True:
+            if custom_handlers is True:  
                 logger.debug('... set up results object ...')
                 self.setup_ep_results(reporttimes, nodenames, linknames)
     
@@ -2854,13 +2906,29 @@ class BinFile(object):
 #                tuples = zip(type_list, valuetype, name_list)
                 tuples = list(zip(valuetype, name_list))
 #                tuples = [(valuetype[i], v) for i, v in enumerate(name_list)]
-                index = pd.MultiIndex.from_tuples(tuples, names=['value','name'])          
+                index = pd.MultiIndex.from_tuples(tuples, names=['value','name'])      
+                
                 try:
                     data = np.fromfile(fin, dtype = np.dtype(ftype), count = (4*nnodes+8*nlinks)*nrptsteps)
-                    data = np.reshape(data, (nrptsteps, (4*nnodes+8*nlinks)))
                 except Exception as e:
                     logger.exception('Failed to process file: %s', e)
                     
+                N = int(np.floor(len(data)/(4*nnodes+8*nlinks)))
+                if N < nrptsteps:
+                    t = reporttimes[N]
+                    if convergence_error:
+                        logger.error('Simulation did not converge at time ' + self._get_time(t) + '.')
+                        raise RuntimeError('Simulation did not converge at time ' + self._get_time(t) + '.')
+                    else:
+                        data = data[0:N*(4*nnodes+8*nlinks)]
+                        data = np.reshape(data, (N, (4*nnodes+8*nlinks)))
+                        reporttimes = reporttimes[0:N]
+                        warnings.warn('Simulation did not converge at time ' + self._get_time(t) + '.')
+                        self.results.error_code = wntr.sim.results.ResultsStatus.error
+                else:
+                    data = np.reshape(data, (nrptsteps, (4*nnodes+8*nlinks)))
+                    self.results.error_code = None
+
                 df = pd.DataFrame(data.transpose(), index =index, columns = reporttimes)
                 df = df.transpose()
                 
@@ -2876,13 +2944,13 @@ class BinFile(object):
                 # Water Quality Results (node and link)
                 if self.quality_type is QualType.Chem:
                     self.results.node['quality'] = QualParam.Concentration._to_si(self.flow_units, df['quality'], mass_units=self.mass_units)
-                    self.results.link['linkquality'] = QualParam.Concentration._to_si(self.flow_units, df['linkquality'], mass_units=self.mass_units)
+                    self.results.link['quality'] = QualParam.Concentration._to_si(self.flow_units, df['linkquality'], mass_units=self.mass_units)
                 elif self.quality_type is QualType.Age:
                     self.results.node['quality'] = QualParam.WaterAge._to_si(self.flow_units, df['quality'], mass_units=self.mass_units)
-                    self.results.link['linkquality'] = QualParam.WaterAge._to_si(self.flow_units, df['linkquality'], mass_units=self.mass_units)
+                    self.results.link['quality'] = QualParam.WaterAge._to_si(self.flow_units, df['linkquality'], mass_units=self.mass_units)
                 else:
                     self.results.node['quality'] = df['quality']
-                    self.results.link['linkquality'] = df['linkquality']
+                    self.results.link['quality'] = df['linkquality']
 
                 # Link Results
                 self.results.link['flowrate'] = HydParam.Flow._to_si(self.flow_units, df['flow'])
@@ -2904,8 +2972,8 @@ class BinFile(object):
                 settings[:, linktype == EN.PBV] = to_si(self.flow_units, settings[:, linktype == EN.PBV], HydParam.Pressure)
                 settings[:, linktype == EN.FCV] = to_si(self.flow_units, settings[:, linktype == EN.FCV], HydParam.Flow)
                 self.results.link['setting'] = pd.DataFrame(data=settings, columns=linknames, index=reporttimes)
-                self.results.link['frictionfact'] = df['frictionfactor']
-                self.results.link['rxnrate'] = df['reactionrate']
+                self.results.link['friction_factor'] = df['frictionfactor']
+                self.results.link['reaction_rate'] = df['reactionrate']
                 
             logger.debug('... read epilog ...')
             # Read the averages and then the number of periods for checks
@@ -2928,7 +2996,7 @@ class NoSectionError(Exception):
     pass
 
 
-class _InpFileDifferHelper(object):
+class _InpFileDifferHelper(object):  # pragma: no cover
     def __init__(self, f):
         """
         Parameters
@@ -3009,7 +3077,7 @@ class _InpFileDifferHelper(object):
             return False
 
 
-def _convert_line(line):
+def _convert_line(line):  # pragma: no cover
     """
     Parameters
     ----------
@@ -3036,7 +3104,7 @@ def _convert_line(line):
     return tmp
 
 
-def _compare_lines(line1, line2, tol=1e-14):
+def _compare_lines(line1, line2, tol=1e-14):  # pragma: no cover
     """
     Parameters
     ----------
@@ -3069,7 +3137,7 @@ def _compare_lines(line1, line2, tol=1e-14):
     return True
 
 
-def _clean_line(wn, sec, line):
+def _clean_line(wn, sec, line):  # pragma: no cover
     """
     Parameters
     ----------
@@ -3095,7 +3163,7 @@ def _clean_line(wn, sec, line):
     return line
 
 def _diff_inp_files(file1, file2=None, float_tol=1e-8, max_diff_lines_per_section=5, 
-                    htmldiff_file='diff.html'):
+                    htmldiff_file='diff.html'):   # pragma: no cover
     """
     Parameters
     ----------

@@ -1,5 +1,4 @@
 from nose.tools import *
-from nose import SkipTest
 from os.path import abspath, dirname, join, isfile
 import os, sys
 import wntr
@@ -80,6 +79,27 @@ def test_plot_network5():
     
     plt.figure()
     wntr.graphics.plot_network(wn, node_attribute=pop, node_range=[0,500], title='Population')
+    plt.savefig(filename, format='png')
+    plt.close()
+    
+    assert_true(isfile(filename))
+
+def test_plot_network6():
+    filename = abspath(join(testdir, 'plot_network6.png'))
+    if isfile(filename):
+        os.remove(filename)
+
+    inp_file = join(ex_datadir,'Net3.inp')
+    wn = wntr.network.WaterNetworkModel(inp_file)
+    sim = wntr.sim.EpanetSimulator(wn)
+    results = sim.run_sim()
+    flowrate_at_5hr = results.link['flowrate'].loc[5*3600, :]*100
+
+    plt.figure(figsize=(15,10))
+    ax = plt.gca()
+    wntr.graphics.plot_network(wn, node_attribute='elevation', link_attribute=flowrate_at_5hr, 
+                               node_size=7, directed=True, node_colorbar_label='Elevation', 
+                               link_colorbar_label='Flowrate', ax=ax)
     plt.savefig(filename, format='png')
     plt.close()
     
@@ -190,11 +210,12 @@ def test_plot_tank_curve():
     assert_true(shouldBeNone is None)
 
 def test_custom_colormap():
-    cmp = wntr.graphics.custom_colormap(numcolors=3, colors=['blue','white','red'], name='custom')
+    cmp = wntr.graphics.custom_colormap(3, colors=['blue','white','red'], name='custom')
     assert_equal(cmp.N,3)
     assert_equal(cmp.name,'custom')
     
 if __name__ == '__main__':
     test_network_animation1()
     test_plot_tank_curve()
+    test_plot_network6()
     
