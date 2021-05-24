@@ -1,19 +1,33 @@
 import wntr
 from wntr.sim.solvers import PyomoSolver
 
-inp_file = 'networks/Net1.inp'
-mode = 'DD' # DD or PDD
-HW_approx = 'piecewise' 
-
 
 ### Create a Pyomo model
+inp_file = 'networks/Net1.inp'
+HW_approx = 'piecewise' 
+demand_model = 'DD' # DD or PDD
+
+# Create a water network model
 wn = wntr.network.WaterNetworkModel(inp_file)
+wn.options.hydraulic.demand_model = demand_model
+
+# Create a WNTR steady state algebraic hydaulic model (this methods is used within the WNTRSimulator) 
 model, updater = wntr.sim.hydraulics.create_hydraulic_model(wn, HW_approx=HW_approx)
+# Extract the jacobian and residuals
+model.set_structure()
+r = model.evaluate_residuals(labeled=True)
+J = model.evaluate_jacobian(labeled=True)
+print(J)
+print()
+print(r)
+
+# Create a Pyomo steady state algebraic hydaulic model
 pyomo_model, pyomo_map = wntr.sim.hydraulics.convert_hydraulic_model_to_pyomo(model)
 print(pyomo_model.pprint())
 
 
 ### Compare the Newton and Pyomo Solvers
+
 # Solve using the NewtonSolver
 wn = wntr.network.WaterNetworkModel(inp_file)
 wn.options.time.duration = 24*3600
