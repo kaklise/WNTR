@@ -1161,7 +1161,7 @@ class InpFile(object):
             control_name = 'control '+str(control_count)
             control_obj = _read_control_line(line, self.wn, self.flow_units, control_name)
             if control_obj is None:
-                continue
+                control_count -= 1
             
             if control_name in self.wn.control_name_list:
                 warnings.warn('One or more [CONTROLS] were duplicated in "{}"; duplicates are ignored.'.format(self.wn.name), stacklevel=0)
