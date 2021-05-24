@@ -1,5 +1,6 @@
 import sys
 import scipy
+import pandas as pd
 from .evaluator import Evaluator
 from .expr import Var, Param, native_numeric_types, Float, ConditionalExpression
 from collections import OrderedDict
@@ -320,13 +321,21 @@ class Model(object):
         del self._params_referenced_by_con[con]
         del self._floats_referenced_by_con[con]
 
-    def evaluate_residuals(self, x=None, num_threads=4):
+    def evaluate_residuals(self, x=None, num_threads=4, labeled=False):
         if x is not None:
             self._evaluator.load_var_values_from_x(x)
         r = self._evaluator.evaluate(len(self._con_ccon_map))
+        
+        if labeled:
+            con_names = [(con.index, con.name) for con in self.cons()]
+            con_names.sort()
+            con_names = [i[1] for i in con_names]
+            
+            r = pd.Series(dict(zip(con_names, r)))
+
         return r
 
-    def evaluate_jacobian(self, x=None):
+    def evaluate_jacobian(self, x=None, labeled=False):
         n_vars = len(self._var_cvar_map)
         n_cons = len(self._con_ccon_map)
         if n_vars != n_cons:
@@ -336,8 +345,20 @@ class Model(object):
         jac_values, col_ndx, row_nnz = self._evaluator.evaluate_csr_jacobian(self._evaluator.nnz,
                                                                              self._evaluator.nnz,
                                                                              len(self._con_ccon_map) + 1)
-        result = scipy.sparse.csr_matrix((jac_values, col_ndx, row_nnz), shape=(n_cons, n_vars))
-        return result
+        J = scipy.sparse.csr_matrix((jac_values, col_ndx, row_nnz), shape=(n_cons, n_vars))
+        
+        if labeled:
+            con_names = [(con.index, con.name) for con in self.cons()]
+            con_names.sort()
+            con_names = [i[1] for i in con_names]
+            
+            var_names = [(var.index, var.name) for var in self.vars()]
+            var_names.sort()
+            var_names = [i[1] for i in var_names]
+            
+            J = pd.DataFrame(J.todense(), columns=var_names, index=con_names)
+
+        return J
 
     def get_x(self):
         return self._evaluator.get_x(len(self._var_cvar_map))
