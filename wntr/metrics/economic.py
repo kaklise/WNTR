@@ -7,7 +7,9 @@ The wntr.metrics.economic module contains economic metrics.
 
     annual_network_cost
     annual_ghg_emissions
+    pump_power
     pump_energy
+    pump_cost
 
 
 """
@@ -29,7 +31,10 @@ def annual_network_cost(wn, tank_cost=None, pipe_cost=None, prv_cost=None,
     
     Parameters
     ----------
-    wn: wntr.network.WaterNetworkModel
+    wn : wntr WaterNetworkModel
+        Water network model. The water network model is needed to 
+        define tank volume, pipe and valve diameter, and pump power conditions.
+    
     tank_cost : pandas Series, optional
         Annual tank cost indexed by volume 
         (default values below, from [SOKZ12]_).
@@ -207,12 +212,16 @@ def annual_ghg_emissions(wn, pipe_ghg=None):
     
     Parameters
     ----------
+    wn : wntr WaterNetworkModel
+        Water network model. The water network model is needed to 
+        define pipe diameter.
+    
     pipe_ghg : pandas Series, optional
         Annual GHG emissions indexed by pipe diameter
         (default values below, from [SOKZ12]_).
         
         =============  ================================
-        Diameter (mm)  Annualised EE (kg-CO2-e/m/yr)
+        Diameter (mm)  Annualized EE (kg-CO2-e/m/yr)
         =============  ================================
         102             5.90
         152             9.71
@@ -251,10 +260,9 @@ def annual_ghg_emissions(wn, pipe_ghg=None):
        
     return network_ghg    
 
-
-def pump_energy(flowrate, head, wn):
+def pump_power(flowrate, head, wn):
     """
-    Compute the pump energy over time.
+    Compute pump power.
     
     The computation uses pump flow rate, node head (used to compute headloss at
     each pump), and pump efficiency. Pump efficiency is defined in
@@ -266,7 +274,7 @@ def pump_energy(flowrate, head, wn):
     Parameters
     ----------
     flowrate : pandas DataFrame
-        A pandas Dataframe containing pump flowrates 
+        A pandas DataFrame containing pump flowrates 
         (index = times, columns = pump names).
     
     head : pandas DataFrame
@@ -279,7 +287,7 @@ def pump_energy(flowrate, head, wn):
 
     Returns
     -------
-    A DataFrame that contains pump energy in J (index = times, columns = pump names).
+    A DataFrame that contains pump power in W (index = times, columns = pump names).
     """
     
     pumps = wn.pump_name_list
@@ -299,15 +307,50 @@ def pump_energy(flowrate, head, wn):
             efficiency_dict[pump_name] = [wn.options.energy.global_efficiency/100.0 for i in time]
         else:
             raise NotImplementedError('WNTR does not support pump efficiency curves yet.')
-            curve = wn.get_curve(pump.efficiency)
-            x = [point[0] for point in curve.points]
-            y = [point[1]/100.0 for point in curve.points]
-            interp = scipy.interpolate.interp1d(x, y, kind='linear')
-            efficiency_dict[pump_name] = interp(np.array(flowrate.loc[:, pump_name]))
+            # TODO: WNTR does not support pump efficiency curves yet
+            # curve = wn.get_curve(pump.efficiency)
+            # x = [point[0] for point in curve.points]
+            # y = [point[1]/100.0 for point in curve.points]
+            # interp = scipy.interpolate.interp1d(x, y, kind='linear')
+            # efficiency_dict[pump_name] = interp(np.array(flowrate.loc[:, pump_name]))
 
     efficiency = pd.DataFrame(data=efficiency_dict, index=time, columns=pumps)
 
     power = 1000.0 * 9.81 * headloss * flowrate / efficiency # Watts = J/s
+
+    return power
+
+def pump_energy(flowrate, head, wn):
+    """
+    Compute the pump energy over time.
+    
+    The computation uses pump flow rate, node head (used to compute headloss at
+    each pump), and pump efficiency. Pump efficiency is defined in
+    ``wn.options.energy.global_efficiency``. Pump efficiency curves are currently 
+    not supported.
+
+        wn.options.energy.global_efficiency = 75 # This means 75% or 0.75
+
+    Parameters
+    ----------
+    flowrate : pandas DataFrame
+        A pandas DataFrame containing pump flowrates 
+        (index = times, columns = pump names).
+    
+    head : pandas DataFrame
+        A pandas DataFrame containing node head 
+        (index = times, columns = node names).
+        
+    wn: wntr WaterNetworkModel
+        Water network model.  The water network model is needed to 
+        define energy efficiency.
+
+    Returns
+    -------
+    A DataFrame that contains pump energy in J (index = times, columns = pump names).
+    """
+    
+    power = pump_power(flowrate, head, wn) # Watts = J/s
     energy = power * wn.options.time.report_timestep # J = Ws
     
     return energy

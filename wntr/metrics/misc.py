@@ -46,7 +46,7 @@ def query(arg1, operation, arg2):
     return mask
 
 def population(wn, R=0.00000876157):
-    """
+    r"""
     Compute population per node, rounded to the nearest integer [USEPA15]_.
 
     .. math:: pop=\dfrac{Average\ expected\ demand}{R}
@@ -54,7 +54,9 @@ def population(wn, R=0.00000876157):
     Parameters
     -----------
     wn : wntr WaterNetworkModel
-        Water network model
+        Water network model. The water network model is needed to 
+        get demand timeseries at junctions and options related to 
+        duration, timestep, and demand multiplier.
 
     R : float (optional, default = 0.00000876157 m3/s = 200 gallons/day)
         Average volume of water consumed per capita per day in m3/s
