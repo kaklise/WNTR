@@ -223,6 +223,8 @@ class WaterNetworkGIS:
                 initial_status=link.initial_status,
                 start_node=link.start_node, # keep start and end node names attached to links
                 end_node=link.end_node,
+                start_node_coordinates=link.start_node.coordinates,
+                end_node_coordinates=link.end_node.coordinates,
                 length=link.length,
                 diameter=link.diameter,
                 roughness=link.roughness,
@@ -342,6 +344,7 @@ class WaterNetworkGIS:
         self.snapped_point_to_line = snapped_points 
         
         sjoin_points = points.sjoin_nearest(lines, how="left", max_distance=tolerance)
+        sjoin_points = sjoin_points.rename(columns={"name":"link"})
 #        sjoin_points.geometry = sjoin_points["node_geom"]
 #        sjoin_points.drop(columns=["node_geom", "type", "initial_quality", "base_demand",
         
@@ -356,9 +359,9 @@ class WaterNetworkGIS:
 #                start_node_coordinate = link.start_node.coordinates
 #                end_node_coordinate = link.end_node.coordinates
                 
-        else:
-            sjoin_points = sjoin_points[["index_right", "geometry"]]
-        sjoin_points = sjoin_points.rename(columns={"index_right":"link"})
+        # else:
+        #     sjoin_points = sjoin_points[["index_right", "geometry"]]
+
         self.sjoin_point_to_line = sjoin_points
         
 #        if find_node:
@@ -428,8 +431,9 @@ class WaterNetworkGIS:
         sjoin_points = points.sjoin_nearest(wn_points, how="left", max_distance=tolerance)
         sjoin_points.geometry = sjoin_points["node_geom"]
 #        sjoin_points.drop(columns=["node_geom", "type", "initial_quality", "base_demand",
-        sjoin_points = sjoin_points[["index_right", "geometry"]]
-        sjoin_points = sjoin_points.rename(columns={"index_right":"node"})
+        # sjoin_points = sjoin_points[["index_right", "geometry"]]
+        sjoin_points = sjoin_points.rename(columns={"name":"node"})
+        sjoin_points = sjoin_points[["node", "geometry", "elevation"]]
         self.sjoin_point_to_point = sjoin_points
 
     def write(self, prefix: str, path: str = None, suffix: str = None, driver="GeoJSON") -> None:
@@ -519,6 +523,7 @@ if __name__ == "__main__":
 #        pipe = wn.get_link(pipe_name)
 #        if node_name == pipe.start_node_name:
 #            start_node = pipe.start_node
+
 #            end_node = pipe.end_node
 #        elif node_name == pipe.end_node_name:
 #            start_node = pipe.end_node
