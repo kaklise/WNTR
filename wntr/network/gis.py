@@ -422,6 +422,8 @@ def snap_points_to_lines(points, lines, tolerance):
     snapped_lines["dist"] = closest.geometry.project(snapped_lines, normalized=True)
     snapped_lines.loc[snapped_lines["dist"]<0.5, "node"] = closest["start_node"]
     snapped_lines.loc[snapped_lines["dist"]>=0.5, "node"] = closest["end_node"]
+    snapped_lines = snapped_lines.drop("dist",axis=1)
+    snapped_lines = snapped_lines.reindex(columns=["link", "node", "geometry"])
     return snapped_lines
 
 if __name__ == "__main__":
