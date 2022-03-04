@@ -406,7 +406,6 @@ def snap_points_to_lines(points, lines, tolerance):
     # Convert back to a GeoDataFrame, so we can do spatial ops
     closest = gpd.GeoDataFrame(closest, geometry="geometry", crs=lines.crs)    
     # Calculate distance between the point and nearby links
-    closest1 = closest
     closest["snap_dist"] = closest.geometry.distance(gpd.GeoSeries(closest.points, crs=lines.crs))
     # Sort on ascending snap distance, so that closest goes to top
     closest = closest.sort_values(by=["snap_dist"])        
@@ -423,7 +422,7 @@ def snap_points_to_lines(points, lines, tolerance):
     snapped_lines["dist"] = closest.geometry.project(snapped_lines, normalized=True)
     snapped_lines.loc[snapped_lines["dist"]<0.5, "node"] = closest["start_node"]
     snapped_lines.loc[snapped_lines["dist"]>=0.5, "node"] = closest["end_node"]
-    return snapped_lines, closest1
+    return snapped_lines
 
 if __name__ == "__main__":
     # Use Net3
@@ -470,7 +469,7 @@ if __name__ == "__main__":
     
     # Snap points to either nodes or links using new functions
     snapped_to_pts = snap_points_to_points(off_valves, wn_gis.junctions, 1.0)
-    snapped_to_lines, closest1 = snap_points_to_lines(off_valves, wn_gis.pipes, 1.0)
+    snapped_to_lines = snap_points_to_lines(off_valves, wn_gis.pipes, 1.0)
     
     # Plot results    
     ax = wn_gis.pipes.plot()
