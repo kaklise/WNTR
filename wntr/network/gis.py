@@ -104,8 +104,6 @@ class WaterNetworkGIS:
             data.append(dd)
             geometry.append(g)
         df = pd.DataFrame(data)
-#        if len(df) > 0:
-#            df.set_index("name", inplace=True)
         self.junctions = gpd.GeoDataFrame(df, crs=crs, geometry=geometry)
 
         data = list()
@@ -144,8 +142,6 @@ class WaterNetworkGIS:
             data.append(dd)
             geometry.append(g)
         df = pd.DataFrame(data)
-        if len(df) > 0:
-            df.set_index("name", inplace=True)
         self.reservoirs = gpd.GeoDataFrame(df, crs=crs, geometry=geometry)
 
         data = list()
@@ -173,8 +169,6 @@ class WaterNetworkGIS:
             else:
                 geometry.append(g)
         df = pd.DataFrame(data)
-        if len(df) > 0:
-            df.set_index("name", inplace=True)
         self.valves = gpd.GeoDataFrame(df, crs=crs, geometry=geometry)
 
         data = list()
@@ -202,8 +196,6 @@ class WaterNetworkGIS:
             else:
                 geometry.append(g)
         df = pd.DataFrame(data)
-#        if len(df) > 0:
-#            df.set_index("name", inplace=True)
         self.pumps = gpd.GeoDataFrame(df, crs=crs, geometry=geometry)
 
         data = list()
@@ -223,8 +215,6 @@ class WaterNetworkGIS:
                 initial_status=link.initial_status,
                 start_node=link.start_node.name, # keep start and end node names attached to links
                 end_node=link.end_node.name,
-#                start_node_coordinates=link.start_node.coordinates,
-#                end_node_coordinates=link.end_node.coordinates,
                 length=link.length,
                 diameter=link.diameter,
                 roughness=link.roughness,
@@ -233,8 +223,6 @@ class WaterNetworkGIS:
             data.append(dd)
             geometry.append(g)
         df = pd.DataFrame(data)
-#        if len(df) > 0:
-#            df.set_index("name", inplace=True)
         self.pipes = gpd.GeoDataFrame(df, crs=crs, geometry=geometry)
 
     def add_node_attributes(self, values, name):
@@ -289,163 +277,6 @@ class WaterNetworkGIS:
                     self.pumps[name] = np.nan
                 self.pumps.loc[link_name, name] = value
                 
-    def snap_to_line(self, points, tolerance, lines='pipes', find_node=False):
-        """
-        Returns new points with coordinates snapped to the nearest lines.
-
-        Parameters
-        ----------
-        points : GeoPandas GeoDataFrame
-            A pandas.DataFrame object with a 'geometry' column populated by 
-            'POINT' geometries.
-        tolerance : float, optional
-            the maximum allowable distance (in the line coordinate system) 
-            between a point and nearby line to move the point to the line.
-        lines : str or GeoPandas GeoDataFrame
-            A pandas.DataFrame object with a 'geometry' column populated by 
-            'LINESTRING' or 'MULTILINESTRING' geometries.
-        """   
-        if lines=='pipes':
-            lines = self.pipes
-
-#        # determine how far to look around each point for lines
-#        bbox = points.bounds + [-tolerance, -tolerance, tolerance, tolerance]       
-#        # determine which links are close to each point
-#        hits = bbox.apply(lambda row: list(lines.loc[list(lines.sindex.intersection(row))]['name']), axis=1)        
-#        closest = pd.DataFrame({
-#            # index of points table
-#            "valve": np.repeat(hits.index, hits.apply(len)),
-#            # name of link
-#            "name": np.concatenate(hits.values)
-#            })
-#        # Merge the closest dataframe with the lines dataframe on the line names
-#        closest = pd.merge(closest,lines, on="name")
-#        # rename the line "name" column header to "link"
-#        closest = closest.rename(columns={"name":"link"})
-#        # Join back to the original points to get their geometry
-#        # rename the point geometry as "point"
-#        closest = closest.join(points.geometry.rename("points"), on="valve")
-#        # Convert back to a GeoDataFrame, so we can do spatial ops
-#        closest = gpd.GeoDataFrame(closest, geometry="geometry", crs=lines.crs)    
-#        # Calculate distance between the point and nearby links
-#        closest["snap_dist"] = closest.geometry.distance(gpd.GeoSeries(closest.points, crs=lines.crs))
-#        # Sort on ascending snap distance, so that closest goes to top
-#        closest = closest.sort_values(by=["snap_dist"])        
-#        # group by the index of the points and take the first, which is the closest line
-#        closest = closest.groupby("valve").first()        
-#        # construct a GeoDataFrame of the closest lines
-#        closest = gpd.GeoDataFrame(closest, geometry="geometry", crs=lines.crs)
-#        # position of nearest point from start of the line
-#        pos = closest.geometry.project(gpd.GeoSeries(closest.points))        
-#        # get new point location geometry
-#        snapped_points = closest.geometry.interpolate(pos)
-#        snapped_points = gpd.GeoDataFrame(data=closest.link,geometry=snapped_points, crs=lines.crs)
-#        self.closest = closest
-#        self.snapped_point_to_line = snapped_points 
-        
-        sjoin_points = points.sjoin_nearest(lines, how="left", max_distance=tolerance)
-        sjoin_points = sjoin_points.rename(columns={"name":"link"})
-        sjoin_points = gpd.GeoDataFrame(sjoin_points, geometry="geometry")
-#        for point in sjoin_points.index:
-#            points_link = sjoin_points.loc[point].link
-#            pt_coord = sjoin_points.loc[point].geometry
-#            linestring = lines.loc[lines['name'] == points_link].geometry
-#            print('point:', point, 'linestring_project:', str(linestring.project(pt_coord, normalized=True)))
-            
-            
-#        sjoin_points.geometry = sjoin_points["node_geom"]
-#        sjoin_points.drop(columns=["node_geom", "type", "initial_quality", "base_demand",
-        
-        
-#        sjoin_points["link"] = sjoin_points["index_right"]
-#        if find_node:    
-#            sjoin_points = sjoin_points[["index_right", "start_node", "end_node", "geometry"]]
-#            # find nearest node to the point (between the start and end nodes for the link)
-#            for row in sjoin_points:
-#                link_name = sjoin_points.loc[row]['link']
-#                link = self._wn.get_link(link_name)
-#                start_node_coordinate = link.start_node.coordinates
-#                end_node_coordinate = link.end_node.coordinates
-                
-        # else:
-        #     sjoin_points = sjoin_points[["index_right", "geometry"]]
-
-        self.sjoin_point_to_line = gpd.GeoDataFrame(sjoin_points, geometry="geometry")
-        
-#        if find_node:
-#            
-#            snapped_points["link_geom"] = 
-#            wn_points["node_geom"] = wn_points.geometry
-#            sjoin_points = points.sjoin_nearest(wn_points, how="left", max_distance=tolerance)
-#            sjoin_points.geometry = sjoin_points["node_geom"]
-#    #        sjoin_points.drop(columns=["node_geom", "type", "initial_quality", "base_demand",
-#            sjoin_points = sjoin_points[["index_right", "geometry"]]
-#            sjoin_points = sjoin_points.rename(columns={"index_right":"node"})
-#            self.sjoin_points = sjoin_points
-            
-                
-
-    def snap_to_point(self, points, tolerance, wn_points='junctions'):
-        """
-        Returns new points with coordinates snapped to the nearest lines.
-
-        Parameters
-        ----------
-        points : GeoPandas GeoDataFrame
-            A pandas.DataFrame object with a 'geometry' column populated by 
-            'POINT' geometries.
-        tolerance : float, optional
-            the maximum allowable distance (in the line coordinate system) 
-            between a point and nearby line to move the point to the line.
-        wn_points : str or GeoPandas GeoDataFrame
-            A pandas.DataFrame object with a 'geometry' column populated by 
-            'LINESTRING' or 'MULTILINESTRING' geometries.
-        """   
-        if wn_points=='junctions':
-            wn_points = self.junctions
-
-#        # determine how far to look around each point for lines
-#        bbox = points.bounds + [-tolerance, -tolerance, tolerance, tolerance]       
-#        # determine which links are close to each point
-#        hits = bbox.apply(lambda row: list(wn_points.loc[list(wn_points.sindex.intersection(row))]['name']), axis=1)        
-#        closest = pd.DataFrame({
-#            # index of points table
-#            "valve": np.repeat(hits.index, hits.apply(len)),
-#            # ordinal position of link - access via iloc later
-#            "name": np.concatenate(hits.values)
-#            })
-#        # Join back to the links on line_i; we use reset_index() to 
-#        # give us the ordinal position of each line
-#        closest = pd.merge(closest,wn_points, on="name")
-#        closest = closest.rename(columns={"name":"node"})
-#        # Join back to the original points to get their geometry
-#        # rename the point geometry as "point"
-#        closest = closest.join(points.geometry.rename("points"), on="valve")
-#        # Convert back to a GeoDataFrame, so we can do spatial ops
-#        closest = gpd.GeoDataFrame(closest, geometry="geometry", crs=wn_points.crs)    
-#        # Calculate distance between the point and nearby links
-#        closest["snap_dist"] = closest.geometry.distance(gpd.GeoSeries(closest.points, crs=wn_points.crs))
-#        # Sort on ascending snap distance, so that closest goes to top
-#        closest = closest.sort_values(by=["snap_dist"])        
-#        # group by the index of the points and take the first, which is the closest line
-#        closest = closest.groupby("valve").first()        
-#        # construct a GeoDataFrame of the closest nodes
-#        closest = gpd.GeoDataFrame(closest, geometry="geometry", crs=wn_points.crs)
-#        snapped_points = gpd.GeoDataFrame(data=closest.node,geometry=closest.geometry, crs=wn_points.crs)
-#        self.closest = closest
-#        self.snapped_point_to_point = snapped_points 
-        
-        wn_points["node_geom"] = wn_points.geometry
-#        points = points.to_crs(wn_points.crs)
-        sjoin_points = points.sjoin_nearest(wn_points, how="left", max_distance=tolerance)
-        sjoin_points.geometry = sjoin_points["node_geom"]
-        wn_points.drop("node_geom", inplace=True, axis=1)
-#        sjoin_points.drop(columns=["node_geom", "type", "initial_quality", "base_demand",
-        # sjoin_points = sjoin_points[["index_right", "geometry"]]
-        sjoin_points = sjoin_points.rename(columns={"name":"node"})
-        sjoin_points = sjoin_points[["node", "geometry", "elevation"]]
-        self.sjoin_point_to_point = gpd.GeoDataFrame(sjoin_points, geometry="geometry")
-
     def write(self, prefix: str, path: str = None, suffix: str = None, driver="GeoJSON") -> None:
         """
         Write the Geometry object to GIS file(s) with names constructed from parameters.
@@ -505,32 +336,39 @@ class WaterNetworkGIS:
             self.valves.to_file(
                 prefix + "_valves" + suffix + extension, driver=driver,
             )
-#        if len(self.snapped_point_to_line) > 0:
-#            self.snapped_point_to_line.to_file(
-#                prefix + "_snapped_points_to_line" + suffix + extension, driver=driver,
-#            )
-#        if len(self.snapped_point_to_point) > 0:
-#            self.snapped_point_to_point.to_file(
-#                prefix + "_snapped_points_to_point" + suffix + extension, driver=driver,
-#            )
 
-def snap_points_to_points(points1, points2, tolerance):
+def snap_points_to_points(points, junctions, tolerance):
+    """
+    Returns new points with coordinates snapped to nearest junctions in the network.
+
+    Parameters
+    ----------
+    points : GeoPandas GeoDataFrame
+        A pandas.DataFrame object with a 'geometry' column populated by 
+        'POINT' geometries.
+    junctions : str or GeoPandas GeoDataFrame
+        A pandas.DataFrame object with a 'geometry' column populated by 
+        'LINESTRING' or 'MULTILINESTRING' geometries.
+    tolerance : float
+        the maximum allowable distance (in the line coordinate system) 
+        to search for a junction from a point and nearby junctions.
+
+    """       
+    isinstance(points, gpd.GeoDataFrame)
+    assert(points['geometry'].geom_type).isin(['Point']).all()
+    isinstance(junctions, gpd.GeoDataFrame)
+    assert(junctions['geometry'].geom_type).isin(['Point']).all()
     
-    isinstance(points1, gpd.GeoDataFrame)
-    assert(points1['geometry'].geom_type).isin(['Point']).all()
-    isinstance(points2, gpd.GeoDataFrame)
-    assert(points2['geometry'].geom_type).isin(['Point']).all()
-    
-    points2["node_geom"] = points2.geometry
-    sjoin_points = points1.sjoin_nearest(points2, how="left", max_distance=tolerance)
+    junctions["node_geom"] = junctions.geometry
+    sjoin_points = points.sjoin_nearest(junctions, how="left", max_distance=tolerance)
     sjoin_points.geometry = sjoin_points["node_geom"]
-    points2.drop("node_geom", inplace=True, axis=1)
+    junctions.drop("node_geom", inplace=True, axis=1)
     sjoin_points = sjoin_points.rename(columns={"name":"node"})
     sjoin_points = sjoin_points[["node", "geometry", "elevation"]]
-    snapped_points1 = gpd.GeoDataFrame(sjoin_points, geometry="geometry")    
-    return snapped_points1
+    snapped_points = gpd.GeoDataFrame(sjoin_points, geometry="geometry")    
+    return snapped_points
     
-def snap_points_to_lines(points1, lines, tolerance):
+def snap_points_to_lines(points, lines, tolerance):
     """
     Returns new points with coordinates snapped to the nearest lines.
 
@@ -542,18 +380,19 @@ def snap_points_to_lines(points1, lines, tolerance):
     lines : str or GeoPandas GeoDataFrame
         A pandas.DataFrame object with a 'geometry' column populated by 
         'LINESTRING' or 'MULTILINESTRING' geometries.
-    tolerance : float, optional
+    tolerance : float
         the maximum allowable distance (in the line coordinate system) 
         between a point and nearby line to move the point to the line.
     """   
-
+    isinstance(points, gpd.GeoDataFrame)
+    assert(points['geometry'].geom_type).isin(['Point']).all()
     # determine how far to look around each point for lines
     bbox = points.bounds + [-tolerance, -tolerance, tolerance, tolerance]       
     # determine which links are close to each point
     hits = bbox.apply(lambda row: list(lines.loc[list(lines.sindex.intersection(row))]['name']), axis=1)        
     closest = pd.DataFrame({
         # index of points table
-        "valve": np.repeat(hits.index, hits.apply(len)),
+        "point": np.repeat(hits.index, hits.apply(len)),
         # name of link
         "name": np.concatenate(hits.values)
         })
@@ -562,85 +401,29 @@ def snap_points_to_lines(points1, lines, tolerance):
     # rename the line "name" column header to "link"
     closest = closest.rename(columns={"name":"link"})
     # Join back to the original points to get their geometry
-    # rename the point geometry as "point"
-    closest = closest.join(points.geometry.rename("points"), on="valve")
+    # rename the point geometry as "points"
+    closest = closest.join(points.geometry.rename("points"), on="point")
     # Convert back to a GeoDataFrame, so we can do spatial ops
     closest = gpd.GeoDataFrame(closest, geometry="geometry", crs=lines.crs)    
     # Calculate distance between the point and nearby links
+    closest1 = closest
     closest["snap_dist"] = closest.geometry.distance(gpd.GeoSeries(closest.points, crs=lines.crs))
     # Sort on ascending snap distance, so that closest goes to top
     closest = closest.sort_values(by=["snap_dist"])        
     # group by the index of the points and take the first, which is the closest line
-    closest = closest.groupby("valve").first()        
+    closest = closest.groupby("point").first()        
     # construct a GeoDataFrame of the closest lines
     closest = gpd.GeoDataFrame(closest, geometry="geometry", crs=lines.crs)
     # position of nearest point from start of the line
     pos = closest.geometry.project(gpd.GeoSeries(closest.points))        
     # get new point location geometry
     snapped_lines = closest.geometry.interpolate(pos)
-    closest_node = closest.geometry.project(gpd.GeoSeries(closest.points), normalize=True)
-    snapped_lines = gpd.GeoDataFrame(data=closest.link,geometry=snapped_points, crs=lines.crs)
-    
-#    sjoin_points = points.sjoin_nearest(lines, how="left", max_distance=tolerance)
-#    sjoin_points = sjoin_points.rename(columns={"name":"link"})
-#    sjoin_points = gpd.GeoDataFrame(sjoin_points, geometry="geometry")
-#    sjoin_points["node"] = 0
-#    sjoin_points["snapped_geom"] = 0
-##    for point in sjoin_points.index:
-#    for point in range(90):
-#        points_link = sjoin_points.loc[point].link
-#        
-#        pt_coord = sjoin_points.loc[point].geometry
-#        link = lines.loc[lines['name'] == points_link]
-#        linestring = link.geometry
-#        snapped_to_line = linestring.interpolate(linestring.project(pt_coord)).values[0]
-#        norm_distance = linestring.project(pt_coord, normalized=True).values[0]
-#        
-#        if norm_distance < 0.5:
-#            sjoin_points["node"].loc[point] = link.start_node.values[0]
-#        else:
-#            sjoin_points["node"].loc[point] = link.end_node.values[0]
-#        sjoin_points["snapped_geom"].loc[point] = snapped_to_line
-#        print('point:', point, '\tnew coord: ', str(snapped_to_line), '\tdistance:', str(norm_distance))
-        
-        
-#        sjoin_points.geometry = sjoin_points["node_geom"]
-#        sjoin_points.drop(columns=["node_geom", "type", "initial_quality", "base_demand",
-    
-    
-#        sjoin_points["link"] = sjoin_points["index_right"]
-#        if find_node:    
-#            sjoin_points = sjoin_points[["index_right", "start_node", "end_node", "geometry"]]
-#            # find nearest node to the point (between the start and end nodes for the link)
-#            for row in sjoin_points:
-#                link_name = sjoin_points.loc[row]['link']
-#                link = self._wn.get_link(link_name)
-#                start_node_coordinate = link.start_node.coordinates
-#                end_node_coordinate = link.end_node.coordinates
-            
-    # else:
-    #     sjoin_points = sjoin_points[["index_right", "geometry"]]
-
-#    snapped_lines = gpd.GeoDataFrame(sjoin_points, geometry="snapped_geom")
-    
-#        if find_node:
-#            +
-#            snapped_points["link_geom"] = 
-#            wn_points["node_geom"] = wn_points.geometry
-#            sjoin_points = points.sjoin_nearest(wn_points, how="left", max_distance=tolerance)
-#            sjoin_points.geometry = sjoin_points["node_geom"]
-#    #        sjoin_points.drop(columns=["node_geom", "type", "initial_quality", "base_demand",
-#            sjoin_points = sjoin_points[["index_right", "geometry"]]
-#            sjoin_points = sjoin_points.rename(columns={"index_right":"node"})
-#            self.sjoin_points = sjoin_points
-               
-    return snapped_lines
-
-def point_projection(point, line):
-    distance = line.distance(point)
-    point_on_line = line.interpolate(line.project(point))
-
-    return point_on_line, distance
+    snapped_lines = gpd.GeoDataFrame(data=closest.link,geometry=snapped_lines, crs=lines.crs)
+    # determine whether the snapped point is closer to the start or end node
+    snapped_lines["dist"] = closest.geometry.project(snapped_lines, normalized=True)
+    snapped_lines.loc[snapped_lines["dist"]<0.5, "node"] = closest["start_node"]
+    snapped_lines.loc[snapped_lines["dist"]>=0.5, "node"] = closest["end_node"]
+    return snapped_lines, closest1
 
 if __name__ == "__main__":
     # Use Net3
@@ -685,28 +468,13 @@ if __name__ == "__main__":
     # Load off-centered valves from geojson
     off_valves = gpd.read_file("Net3_off_valves.geojson") # off-centered valves
     
-    # Snap valves onto pipes using new function
-#    wn_gis.snap_to_line(off_valves, tolerance=1.0)
-    snapped_pts = snap_points_to_points(off_valves, wn_gis.junctions, 1.0)
-    snapped_lines = snap_points_to_lines(off_valves, wn_gis.pipes, 1.0)
-#    wn_gis.snap_to_point(off_valves, tolerance=1.0)
+    # Snap points to either nodes or links using new functions
+    snapped_to_pts = snap_points_to_points(off_valves, wn_gis.junctions, 1.0)
+    snapped_to_lines, closest1 = snap_points_to_lines(off_valves, wn_gis.pipes, 1.0)
     
-#    # Valves snapped to the nearest pipes
-##    new_valves = wn_gis.snapped_point_to_line
-##    new_junctions = wn_gis.snapped_point_to_point
-##    sj_pts = wn_gis.sjoin_point_to_point
-##    sj_pt_l = wn_gis.sjoin_point_to_line
-#    
-#    # Plot results    
-#    ax = wn_gis.pipes.plot()
-#    off_valves.plot(color="r",ax=ax)
-##    new_valves.plot(color="g",ax=ax)
-##    new_junctions.plot(color="k",ax=ax)
-##    sj_pt_l.plot(color="y",ax=ax)
-#    snapped_pts.plot(color="k",ax=ax)
-#    snapped_lines.plot(color="b",ax=ax)
-##    
-##    wn_gis.write(prefix='Net3')
-#    
-##    pipes = gpd.read_file("Net3_pipes.geojson")
-#    
+    # Plot results    
+    ax = wn_gis.pipes.plot()
+    off_valves.plot(color="r",ax=ax)
+    snapped_to_pts.plot(color="k",ax=ax)
+    snapped_to_lines.plot(color="b",ax=ax)
+
