@@ -346,7 +346,7 @@ def snap_points_to_points(points, junctions, tolerance):
     points : GeoPandas GeoDataFrame
         A pandas.DataFrame object with a 'geometry' column populated by 
         'POINT' geometries.
-    junctions : str or GeoPandas GeoDataFrame
+    junctions : GeoPandas GeoDataFrame
         A pandas.DataFrame object with a 'geometry' column populated by 
         'POINT' geometries.
     tolerance : float
@@ -377,7 +377,7 @@ def snap_points_to_lines(points, lines, tolerance):
     points : GeoPandas GeoDataFrame
         A pandas.DataFrame object with a 'geometry' column populated by 
         'POINT' geometries.
-    lines : str or GeoPandas GeoDataFrame
+    lines : GeoPandas GeoDataFrame
         A pandas.DataFrame object with a 'geometry' column populated by 
         'LINESTRING' or 'MULTILINESTRING' geometries.
     tolerance : float
