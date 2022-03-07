@@ -12,3 +12,4 @@ from .controls import Comparison, ControlPriority, TimeOfDayCondition, \
     SimTimeCondition, ValueCondition, TankLevelCondition, RelativeCondition, \
     OrCondition, AndCondition, ControlAction, Control, ControlChecker, ControlChangeTracker, Rule
 from .io import to_dict, from_dict, read_inpfile, write_inpfile, read_json, write_json
+from .gis import snap_points_to_points, snap_points_to_lines
