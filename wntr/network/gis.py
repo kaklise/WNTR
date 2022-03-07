@@ -348,9 +348,9 @@ def snap_points_to_points(points, junctions, tolerance):
         'POINT' geometries.
     junctions : str or GeoPandas GeoDataFrame
         A pandas.DataFrame object with a 'geometry' column populated by 
-        'LINESTRING' or 'MULTILINESTRING' geometries.
+        'POINT' geometries.
     tolerance : float
-        the maximum allowable distance (in the line coordinate system) 
+        the maximum allowable distance (in the junction coordinate system) 
         to search for a junction from a point and nearby junctions.
 
     """       
@@ -416,66 +416,12 @@ def snap_points_to_lines(points, lines, tolerance):
     # position of nearest point from start of the line
     pos = closest.geometry.project(gpd.GeoSeries(closest.points))        
     # get new point location geometry
-    snapped_lines = closest.geometry.interpolate(pos)
-    snapped_lines = gpd.GeoDataFrame(data=closest.link,geometry=snapped_lines, crs=lines.crs)
+    snapped_points = closest.geometry.interpolate(pos)
+    snapped_points = gpd.GeoDataFrame(data=closest.link,geometry=snapped_points, crs=lines.crs)
     # determine whether the snapped point is closer to the start or end node
-    snapped_lines["dist"] = closest.geometry.project(snapped_lines, normalized=True)
-    snapped_lines.loc[snapped_lines["dist"]<0.5, "node"] = closest["start_node"]
-    snapped_lines.loc[snapped_lines["dist"]>=0.5, "node"] = closest["end_node"]
-    snapped_lines = snapped_lines.drop("dist",axis=1)
-    snapped_lines = snapped_lines.reindex(columns=["link", "node", "geometry"])
-    return snapped_lines
-
-if __name__ == "__main__":
-    # Use Net3
-    import wntr
-    import matplotlib.pyplot as plt
-    plt.close('all')
-    
-    inp_file = '../../examples/networks/Net3.inp'
-    wn = wntr.network.WaterNetworkModel(inp_file)
-    
-    # Create GIS network
-    wn_gis = WaterNetworkGIS(wn)
-    
-#    """ Generate valves, move them slightly off the pipes, save as geojson """
-#    # generate a valve layer
-#    valve_layer = wntr.network.generate_valve_layer(wn)
-#    
-#    # adjust valves so they are moved off the pipes in random directions
-#    valve_coordinates = []
-#    for valve_name, (pipe_name, node_name) in valve_layer.iterrows():
-#        pipe = wn.get_link(pipe_name)
-#        if node_name == pipe.start_node_name:
-#            start_node = pipe.start_node
-
-#            end_node = pipe.end_node
-#        elif node_name == pipe.end_node_name:
-#            start_node = pipe.end_node
-#            end_node = pipe.start_node
-#        else:
-#            print("Not valid")
-#            continue
-#        x0 = start_node.coordinates[0]
-#        dx = end_node.coordinates[0] - x0
-#        y0 = start_node.coordinates[1]
-#        dy = end_node.coordinates[1] - y0
-#        valve_coordinates.append((x0 + dx * 0.1 + 0.5*(np.random.random() - 0.5), y0 + dy * 0.1 + 0.5*(np.random.random() - 0.5)))
-#    valve_coordinates = np.array(valve_coordinates)
-#    geometry = [Point(xy) for xy in zip(valve_coordinates[:,0], valve_coordinates[:,1])]
-#    off_valves = gpd.GeoDataFrame(geometry=geometry)
-#    off_valves.to_file("Net3_off_valves.geojson")
-    
-    # Load off-centered valves from geojson
-    off_valves = gpd.read_file("Net3_off_valves.geojson") # off-centered valves
-    
-    # Snap points to either nodes or links using new functions
-    snapped_to_pts = snap_points_to_points(off_valves, wn_gis.junctions, 1.0)
-    snapped_to_lines = snap_points_to_lines(off_valves, wn_gis.pipes, 1.0)
-    
-    # Plot results    
-    ax = wn_gis.pipes.plot()
-    off_valves.plot(color="r",ax=ax)
-    snapped_to_pts.plot(color="k",ax=ax)
-    snapped_to_lines.plot(color="b",ax=ax)
-
+    snapped_points["dist"] = closest.geometry.project(snapped_points, normalized=True)
+    snapped_points.loc[snapped_points["dist"]<0.5, "node"] = closest["start_node"]
+    snapped_points.loc[snapped_points["dist"]>=0.5, "node"] = closest["end_node"]
+    snapped_points = snapped_points.drop("dist",axis=1)
+    snapped_points = snapped_points.reindex(columns=["link", "node", "geometry"])
+    return snapped_points
