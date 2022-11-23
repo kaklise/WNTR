@@ -35,6 +35,7 @@ run simulations are described in more detail below, followed by a list of softwa
    :class:`~wntr.sim`		                           Contains classes and methods to run hydraulic and water quality simulations using the water network model.
    :class:`~wntr.metrics`	                           Contains functions to compute resilience, including hydraulic, water quality, water security, and economic metrics. Methods to compute topographic metrics are included in the wntr.network.graph module.
    :class:`~wntr.morph`	                              Contains methods to modify water network model morphology, including network skeletonization, modifying node coordinates, and splitting or breaking pipes.
+   :class:`~wntr.gis`	                              Contains geospatial capabilities, including a function to convert the water network model to GeoDataFrames.
    :class:`~wntr.graphics`                            Contains functions to generate graphics.
    :class:`~wntr.epanet`                              Contains EPANET 2.00.12 compatibility class and methods for WNTR.
    :class:`~wntr.utils`                               Contains helper functions.
@@ -88,7 +89,7 @@ These classes are listed in :numref:`table-sim-subpackage`.
     
    :class:`~wntr.sim.core.WNTRSimulator`              The WNTRSimulator uses custom Python solvers to run demand-driven and pressure dependent demand hydraulic simulations and includes models to simulate pipe leaks.
                                                       The simulator includes an algebraic model, which can be extended to simulate additional components or behaviors in water network models.	
-                                                      The WNTRSimulator does not perform water quality simulations. The WNTRSimulator does not perform water quality simulations.
+                                                      The WNTRSimulator does not perform water quality simulations.
 
    =================================================  =============================================================================================================================================================================================================================================================================
 
@@ -153,6 +154,10 @@ Discrepancies
 -------------------------------------------
 Known discrepancies between the WNTRSimulator and EpanetSimulator are listed below.
 
+* **Tank draining**: The EpanetSimulator (and EPANET) continue to supply water from tanks after they reach their 
+  minimum elevation.  This can result in incorrect system pressures.
+  See issues https://github.com/USEPA/WNTR/issues/210 and https://github.com/OpenWaterAnalytics/EPANET/issues/623
+  The EPANET dll in WNTR will be updated when an EPANET release is available.
 * **Pump controls and patterns**: Pumps have speed settings which are adjustable 
   by controls and/or patterns.  With the EpanetSimulator, 
   controls and patterns adjust the actual speed.  With the WNTRSimulator, pumps have a 'base speed' 
