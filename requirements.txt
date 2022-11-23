@@ -10,12 +10,13 @@ plotly
 folium
 utm
 openpyxl
-geopandas
-rtree
+geopandas; sys_platform == "darwin" or sys_platform == "linux"
+rtree; sys_platform == "darwin" or sys_platform == "linux"
 
 # Testing
-nose
+pytest
 ipykernel
 nbformat
 nbconvert
- 
+coverage
+sphinx_rtd_theme

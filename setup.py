@@ -1,15 +1,24 @@
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
-import numpy
 import os
 import re
+import sys
 
 use_swig = False
-build = False
 
+# BUILD_WNTR_EXTENSIONS is defined as an environment variable for the project at readthedocs.org
+if '--build' in sys.argv:
+    build = True
+    sys.argv.remove('--build')
+elif 'BUILD_WNTR_EXTENSIONS' in os.environ and os.environ['BUILD_WNTR_EXTENSIONS'].lower() == 'true':
+    build = True
+else:
+    build = False
+    
 extension_modules = list()
-
 if build:
+    import numpy
+
     try:
         numpy_include = numpy.get_include()
     except AttributeError:
@@ -67,7 +76,7 @@ AUTHOR = 'WNTR Developers'
 MAINTAINER_EMAIL = 'kaklise@sandia.gov'
 LICENSE = 'Revised BSD'
 URL = 'https://github.com/USEPA/WNTR'
-DEPENDENCIES = ['numpy', 'scipy', 'networkx', 'pandas', 'matplotlib']
+DEPENDENCIES = ['numpy>=1.21', 'scipy', 'networkx', 'pandas', 'matplotlib']
 
 # use README file as the long description
 file_dir = os.path.abspath(os.path.dirname(__file__))
@@ -83,6 +92,8 @@ with open(os.path.join(file_dir, 'wntr', '__init__.py')) as f:
         VERSION = version_match.group(1)
     else:
         raise RuntimeError("Unable to find version string.")
+
+print(extension_modules)
 
 setup(name=DISTNAME,
       version=VERSION,
