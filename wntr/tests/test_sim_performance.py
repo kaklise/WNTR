@@ -95,7 +95,7 @@ class TestPerformance(unittest.TestCase):
 
     def test_Net1_charset(self):
         """Only needs to test that runs successfully with latin-1 character set."""
-        inp_file = join(ex_datadir, "latin1.inp")
+        inp_file = join(test_datadir, "latin1.inp")
         wn = self.wntr.network.WaterNetworkModel(inp_file)
 
         epa_sim = self.wntr.sim.EpanetSimulator(wn)
@@ -267,7 +267,7 @@ class TestPerformance(unittest.TestCase):
         t1.join()
         t2.join()
         thr_time = time.time()-start_time
-        self.assertGreaterEqual(seq_time, thr_time, 'EPANET threading took longer than sequential')
+        self.assertGreaterEqual(seq_time - thr_time, -1, 'EPANET threading took 1s longer than sequential')
 
         start_time = time.time()
         run_wntr(wn1, 'temp1')
@@ -282,7 +282,7 @@ class TestPerformance(unittest.TestCase):
         t1.join()
         t2.join()
         thr_time = time.time()-start_time
-        self.assertGreaterEqual(seq_time, thr_time, 'WNTR threading took longer than sequential')
+        self.assertGreaterEqual(seq_time - thr_time, -1, 'WNTR threading took 1s longer than sequential')
 
     def test_Net6_mod_performance(self):
         head_diff_abs_threshold = 1e-3
