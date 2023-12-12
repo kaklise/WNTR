@@ -2,6 +2,8 @@
 
     \clearpage
 
+.. _installation:
+
 Installation
 ======================================
 .. include:: <isonum.txt>
@@ -38,7 +40,7 @@ following commands in a terminal, command line, or PowerShell prompt.
 
 .. |pypi version| image:: https://img.shields.io/pypi/v/wntr.svg?maxAge=3600
 .. _pypi version: https://pypi.org/project/wntr/
-.. |pypi downloads| image:: https://pepy.tech/badge/wntr
+.. |pypi downloads| image:: https://static.pepy.tech/badge/wntr
 .. _pypi downloads: https://pepy.tech/project/wntr
 .. |anaconda version| image:: https://anaconda.org/conda-forge/wntr/badges/version.svg 
 .. _anaconda version: https://anaconda.org/conda-forge/wntr
@@ -152,7 +154,7 @@ Step 2: Install WNTR
 	   
 	  .. note:: 
 	     WNTR includes C++ code that is built into shared object files (e.g., pyd for Windows)
-	     during the setup process. This requires that the user has a C++ compiler on their path.
+	     during the setup process. This requires that the user has a C++ compiler (e.g., Visual Studio C++, GNU C++, MinGW) on their path.
 	     No compiler is needed when installing WNTR through PyPI (Option 1) or conda (Option 2). 
    
 Step 3: Test installation
@@ -167,6 +169,12 @@ Step 3: Test installation
 	If WNTR is **not** installed properly, the user will see the following ImportError::
 	
 		ImportError: No module named wntr
+	
+	To verify the version of WNTR that has been installed, continue in the Python console and run::
+	
+		print(wntr.__version__)
+		
+	This will print the WNTR version to the screen, for example, "1.0.0".
 	
 	See :ref:`getting_started` for a simple example that can also be used to test installation.
 	A full set of software tests can also be run locally to ensure proper installation, see :ref:`software_tests` for more details.
@@ -193,11 +201,11 @@ and building the documentation.
 
 .. note:: 
    WNTR includes C++ code that is built into shared object files (e.g., pyd for Windows)
-   during the setup process. This requires that the developer has a C++ compiler on their path.
+   during the setup process. This requires that the developer has a C++ compiler located in a folder specified in their PATH.
    When installing WNTR through PyPI or conda, the shared object files do not need to be built 
    and no compiler is needed.
 
-If the developer does NOT have a C++ compiler, or would rather use prebuilt wheels,
+If the developer does NOT have a C++ compiler, or would rather use prebuilt wheels (a pre-built binary package format for Python modules and libraries),
 the shared object files can be downloaded from WNTR GitHub Actions using the following steps:
 
 * Clone and setup the main branch of WNTR from the GitHub 
@@ -231,15 +239,15 @@ Requirements
 Requirements for WNTR include 64-bit Python (tested on versions 3.7, 3.8, 3.9, and 3.10) along with several Python packages. 
 Users should have experience using Python (https://www.python.org/), including the installation of additional Python packages. The following Python packages are required:
 
-* NumPy [VaCV11]_: used to support large, multi-dimensional arrays and matrices, 
+* NumPy :cite:p:`vacv11`: used to support large, multi-dimensional arrays and matrices, 
   http://www.numpy.org/
-* SciPy [VaCV11]_: used to support efficient routines for numerical integration, 
+* SciPy :cite:p:`vacv11`: used to support efficient routines for numerical integration, 
   http://www.scipy.org/
-* NetworkX [HaSS08]_: used to create and analyze complex networks, 
+* NetworkX :cite:p:`hass08`: used to create and analyze complex networks, 
   https://networkx.github.io/
-* pandas [Mcki13]_: used to analyze and store time series data, 
+* pandas :cite:p:`mcki13`: used to analyze and store time series data, 
   http://pandas.pydata.org/
-* Matplotlib [Hunt07]_: used to produce graphics, 
+* Matplotlib :cite:p:`hunt07`: used to produce graphics, 
   http://matplotlib.org/
   
 These packages are included in the Anaconda Python distribution.
@@ -251,17 +259,17 @@ Optional dependencies
 
 The following Python packages are optional:
 
-* plotly [SPHC16]_: used to produce interactive scalable graphics, 
+* plotly :cite:p:`sphc16`: used to produce interactive scalable graphics, 
   https://plot.ly/
-* folium [Folium]_: used to produce Leaflet maps, 
+* folium :cite:p:`folium`: used to produce Leaflet maps, 
   http://python-visualization.github.io/folium/
-* utm [Bieni19]_: used to translate node coordinates to utm and lat/long,
+* utm :cite:p:`bieni19`: used to translate node coordinates to utm and lat/long,
   https://pypi.org/project/utm/
-* geopandas [JVFM21]_: used to work with geospatial data,
+* geopandas :cite:p:`jvfm21`: used to work with geospatial data,
   https://geopandas.org/
-* rtree [rtree]_: used for overlay operations in geopandas,
+* rtree :cite:p:`rtree`: used for overlay operations in geopandas,
   https://rtree.readthedocs.io/
-* openpyxl [GaCl18]_: used to read/write to Microsoft® Excel® spreadsheets,
+* openpyxl :cite:p:`gacl18`: used to read/write to Microsoft® Excel® spreadsheets,
   https://openpyxl.readthedocs.io
 
 All of these packages **except geopandas** are included in the Anaconda Python distribution.

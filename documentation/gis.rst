@@ -46,17 +46,20 @@ Open source GIS platforms include QGIS and GRASS GIS.
 The following section describes capabilities in WTNR that use GeoPandas GeoDataFrames.  
 
 .. note:: 
-   Functions that use GeoDataFrames require the Python package **geopandas** [JVFM21]_ 
-   and **rtree** [rtree]_, both are optional dependencies of WNTR.
+   Functions that use GeoDataFrames require the Python package **geopandas** :cite:p:`jvfm21` 
+   and **rtree** :cite:p:`rtree`. Both are optional dependencies of WNTR.
    Note that **shapely** is installed with geopandas.
 
 The following examples use a water network generated from Net1.inp.
 The :class:`~wntr.gis.geospatial.snap` and :class:`~wntr.gis.geospatial.intersect` examples 
 also use additional GIS data stored in the 
 `examples/data <https://github.com/USEPA/WNTR/blob/main/examples/data>`_ directory.
-For simplicity, the examples assume that all data coordinates are in 
+
+For simplicity, the examples in this section assume that all network and data coordinates are in 
 the EPSG:4326 coordinate reference system (CRS).  
+**Note that EPANET does not have a standard or default coordinate reference system.**
 More information on setting and transforming CRS is included in :ref:`crs`.
+    
 
 .. doctest::
     :skipif: gpd is None
@@ -65,6 +68,8 @@ More information on setting and transforming CRS is included in :ref:`crs`.
 	
     >>> wn = wntr.network.WaterNetworkModel('networks/Net1.inp') # doctest: +SKIP
 
+
+.. _gis_data:
 
 Water network GIS data
 ------------------------
@@ -101,7 +106,7 @@ Individual GeoDataFrames are obtained as follows (Note that the example network,
     >>> wn_gis.pumps # doctest: +SKIP
     >>> wn_gis.valves # doctest: +SKIP
 	
-For example, the junctions GeoDataFrame contains the following information
+For example, the junctions GeoDataFrame contains the following information:
 
 .. doctest::
     :skipif: gpd is None
@@ -134,17 +139,17 @@ Attributes
 
     The following example adds the simulated pressure at hour 1 to the water network GIS data 
     (which includes pressure at junctions, tanks, and reservoirs).
-
+    
     .. doctest::
        :skipif: gpd is None
-	   
+
         >>> sim = wntr.sim.EpanetSimulator(wn)
         >>> results = sim.run_sim()
-    	>>> wn_gis.add_node_attributes(results.node['pressure'].loc[3600,:], 
+        >>> wn_gis.add_node_attributes(results.node['pressure'].loc[3600,:], 
     	...     'Pressure_1hr')
-
+    
     Attributes can also be added directly to individual GeoDataFrames, as shown below.
-
+    
     .. doctest::
        :skipif: gpd is None
 
@@ -171,7 +176,7 @@ Geometry
         >>> wn_gis = wntr.network.to_gis(wn, pumps_as_points=True, 
     	...     valves_as_points=True)
 		
-    * Pipes that do not contain vertices are stored as a LineString while pipes that contain 
+    * Pipes that do not contain vertices, interior vertex points that allow the visual depiction of curved pipes, are stored as a LineString while pipes that contain 
       vertices are stored as a MultiLineString.
 
     .. _table-geometry-type:
@@ -188,10 +193,12 @@ Geometry
        Valve                           LineString or Point
        ==============================  ===============================
    
-A WaterNetworkGIS object can also be written to GeoJSON and Shapefile files using 
+A WaterNetworkGIS object can also be written to GeoJSON and Shapefiles using 
 the object's :class:`~wntr.gis.network.WaterNetworkGIS.write_geojson` and 
 :class:`~wntr.gis.network.WaterNetworkGIS.write_shapefile` methods. 
-The GeoJSON and Shapefile files can be loaded into GIS platforms for further analysis and visualization.
+See :ref:`shapefile_format` for more information on Shapefile format.
+
+The GeoJSON and Shapefiles can be loaded into GIS platforms for further analysis and visualization.
 An example of creating GeoJSON files from a WaterNetworkModel using the function :class:`~wntr.gis.network.WaterNetworkGIS.write_geojson`
 is shown below.
 
@@ -234,7 +241,7 @@ WNTR to add attributes to the water network model and analysis. Examples of thes
 The snap and intersect examples below used additional GIS data stored in the 
 `examples/data <https://github.com/USEPA/WNTR/blob/main/examples/data>`_ directory.
 
-Note, the GeoPandas ``read_file`` and ``to_file`` functions can be used to read/write external GeoJSON and Shapefile files in Python.
+Note, the GeoPandas ``read_file`` and ``to_file`` functions can be used to read/write external GeoJSON and Shapefiles in Python.
 
 .. _crs:
 
@@ -264,7 +271,7 @@ Several important points on CRS are listed below.
 * Projected CRSs are preferred for more accurate distance calculations.
 
 The following example reads a GeoJSON file and overrides the CRS to change it from EPSG:4326 to EPSG:3857.
-(Note, this does not change the coordinates in the geometry column).
+(Note, this does not change the coordinates in the geometry column.)
 
 .. doctest::
     :skipif: gpd is None
@@ -294,8 +301,8 @@ The following example reads a GeoJSON file and overrides the CRS to change it fr
 
     >>> hydrant_data = gpd.read_file(examples_dir+'/data/Net1_hydrant_data.geojson')
 
-The following example reads a GeoJSON file and transforms the CRS to EPSG:3857 
-(Note, this transforms the coordinates in the geometry column).
+The following example reads a GeoJSON file and transforms the CRS to EPSG:3857. 
+(Note, this transforms the coordinates in the geometry column.)
 
 .. doctest::
     :skipif: gpd is None
@@ -372,7 +379,7 @@ Snap hydrants to junctions
 
 GIS data which include the network hydrant locations is useful in a resilience analysis. In particular, 
 this information identifies which junctions could have their demands increased to simulate the opening 
-of hydrants to fight fires or flush contaminated water out of the network either of which could caused by a disaster scenario. 
+of hydrants to fight fires or flush contaminated water out of the network, either of which could caused by a disaster scenario. 
 The following example highlights the process to snap hydrants to junctions. The example dataset of hydrant 
 locations is a GeoDataFrame with a `geometry` column that contains ``shapely.geometry.Point`` geometries and a 
 `demand` column that defines fire flow requirements. 
@@ -391,7 +398,7 @@ The GeoPandas ``read_file`` method is used to read the GeoJSON file into a GeoDa
     2    8000  POINT (51.20000 71.10000)
 
 The following example uses the function :class:`~wntr.gis.snap` to snap hydrant locations to the nearest junction 
-within a tolerance of 5.0 degrees.
+within a tolerance of 5.0 units (the tolerance is in the units of the GIS coordinate system).
 	
 .. doctest::
     :skipif: gpd is None
@@ -410,7 +417,8 @@ the hydrants snapped to the junctions in Net1.
     :skipif: gpd is None
 
     >>> ax = hydrant_data.plot()
-    >>> ax = wntr.graphics.plot_network(wn, node_attribute=snapped_to_junctions['node'].to_list(), ax=ax)
+    >>> ax = wntr.graphics.plot_network(wn, 
+    ...     node_attribute=snapped_to_junctions['node'].to_list(), ax=ax)
 
 .. doctest::
     :skipif: gpd is None
@@ -422,7 +430,7 @@ the hydrants snapped to the junctions in Net1.
 
 .. _fig-snap-points:
 .. figure:: figures/snap_points.png
-   :width: 800
+   :width: 640
    :alt: Hydrants snapped to junctions in EPANET example Net1 using the snapped points to points function
 
    Net1 with example hydrants snapped to junctions, in which the larger blue circles are the hydrant locations and the smaller red circles are the associated junctions.
@@ -506,7 +514,7 @@ illustrates the valve layer created by snapping points to lines in Net1.
 
 .. _fig-snap-lines:
 .. figure:: figures/snap_lines.png
-   :width: 600
+   :width: 640
    :alt: Isolation valves snapped to pipes in EPANET example Net1 using the snapped points to lines function
 
    Net1 with example valve layer created by snapping points to lines, in which the blue circles are the isolation valve locations 
@@ -597,7 +605,8 @@ The pipes are colored based upon their maximum earthquake probability.
 
     >>> ax = earthquake_data.plot(column='Pr', alpha=0.5, cmap='bone', vmin=0, vmax=1)
     >>> ax = wntr.graphics.plot_network(wn, link_attribute=pipe_Pr['max'], link_width=1.5, 
-    ...     node_range=[0,1], link_range=[0,1], ax=ax)
+    ...     node_range=[0,1], link_range=[0,1], ax=ax, 
+    ...     link_colorbar_label='Earthquake Probability')
 
 .. doctest::
     :skipif: gpd is None
@@ -609,10 +618,10 @@ The pipes are colored based upon their maximum earthquake probability.
 	
 .. _fig-intersect-earthquake:
 .. figure:: figures/intersect_earthquake.png
-   :width: 800
+   :width: 640
    :alt: Intersection of pipes with earthquake fault lines in EPANET example Net1
 
-   Net1 with example earthquake fault lines intersected with pipes.  
+   Net1 with example earthquake fault lines intersected with pipes, which are colored based upon their maximum earthquake probability.  
    
 The intersect function can also be used to identify pipes that cross each fault simply by reversing 
 the order in which the geometries intersect, as shown below:
@@ -631,7 +640,7 @@ the order in which the geometries intersect, as shown below:
 Assign landslide probability to pipes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Landslide hazard zones GIS data can be used to identify pipes with the potential to be effected during a landslide. 
+Landslide hazard zones GIS data can be used to identify pipes with the potential to be affected during a landslide. 
 The following example highlights the process to assign landslide probabilities to pipes. The landslide hazard zones example dataset 
 is a GeoDataFrame with a `geometry` column that contains ``shapely.geometry.LineString`` geometries and a 
 `Pr` column which contains the probability of damage from a landslide in that zone.
@@ -680,7 +689,8 @@ The pipes are colored based upon their weighted mean landslide probability.
 
     >>> ax = landslide_data.plot(column='Pr', alpha=0.5, cmap='bone', vmin=0, vmax=1)
     >>> ax = wntr.graphics.plot_network(wn, link_attribute=pipe_Pr['weighted_mean'], 
-    ...     link_width=1.5, node_range=[0,1], link_range=[0,1], ax=ax)
+    ...     link_width=1.5, node_range=[0,1], link_range=[0,1], ax=ax, 
+    ...     link_colorbar_label='Landslide Probability')
 
 .. doctest::
     :skipif: gpd is None
@@ -692,10 +702,10 @@ The pipes are colored based upon their weighted mean landslide probability.
 
 .. _fig-intersect-landslide:
 .. figure:: figures/intersect_landslide.png
-   :width: 800
+   :width: 640
    :alt: Intersection of junctions with landslide zones in EPANET example Net1
 
-   Net1 with example landslide zones intersected with pipes. 
+   Net1 with example landslide zones intersected with pipes, which are colored based upon their weighted mean landslide probability. 
    
 **By reversing the order of GeoDataFrames in the intersection function**, 
 the pipes that intersect each landslide zone and information about 
@@ -800,7 +810,7 @@ the census tracts (polygons) is different than the junction and pipe attributes.
 
 .. _fig-intersect-demographics:
 .. figure:: figures/intersect_demographics.png
-   :width: 800
+   :width: 640
    :alt: Intersection of junctions and pipes with mean income demographic data in EPANET example Net1
 
    Net1 with mean income demographic data intersected with junctions and pipes.

@@ -1,3 +1,5 @@
+"""WNTR AML base classes."""
+
 import sys
 import scipy
 import pandas as pd
@@ -154,6 +156,7 @@ class Model(object):
         if self._refcounts[var] == 0:
             cvar = self._var_cvar_map[var]
             var._c_obj = None
+            var._value = cvar.value
             del self._refcounts[var]
             del self._var_cvar_map[var]
             self._evaluator.remove_var(cvar)
@@ -163,6 +166,7 @@ class Model(object):
         if self._refcounts[p] == 0:
             cparam = self._param_cparam_map[p]
             p._c_obj = None
+            p._value = cparam.value
             del self._refcounts[p]
             del self._param_cparam_map[p]
             self._evaluator.remove_param(cparam)

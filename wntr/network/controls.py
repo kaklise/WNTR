@@ -2,29 +2,6 @@
 The wntr.network.controls module includes methods to define network controls
 and control actions.  These controls modify parameters in the network during
 simulation.
-
-.. rubric:: Contents
-
-.. autosummary::
-
-    Subject
-    Observer
-    Comparison
-    ControlPriority
-    ControlCondition
-    TimeOfDayCondition
-    SimTimeCondition
-    ValueCondition
-    TankLevelCondition
-    RelativeCondition
-    OrCondition
-    AndCondition
-    BaseControlAction
-    ControlAction
-    ControlBase
-    Control
-    ControlManager
-	
 """
 import math
 import enum
@@ -2317,7 +2294,7 @@ class ControlChangeTracker(Observer):
 
     def register_control(self, control):
         """
-        Register a control with the ControlManager
+        Register a control
 
         Parameters
         ----------
@@ -2355,7 +2332,7 @@ class ControlChangeTracker(Observer):
 
     def deregister(self, control):
         """
-        Deregister a control with the ControlManager
+        Deregister a control
 
         Parameters
         ----------
@@ -2383,7 +2360,7 @@ class ControlChecker(object):
 
     def register_control(self, control):
         """
-        Register a control with the ControlManager
+        Register a control
 
         Parameters
         ----------
@@ -2393,7 +2370,7 @@ class ControlChecker(object):
 
     def deregister(self, control):
         """
-        Deregister a control with the ControlManager
+        Deregister a control
 
         Parameters
         ----------
