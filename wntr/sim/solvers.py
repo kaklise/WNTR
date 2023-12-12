@@ -73,32 +73,6 @@ class NewtonSolver(object):
                 | "BT_RHO" (NewtonSolver.rho)
                 | "BT_MAXITER" (NewtonSolver.bt_maxiter)
                 | "BACKTRACKING" (NewtonSolver.bt)import wntr
-
-# Create a water network model
-inp_file = 'networks/Net1.inp'
-wn = wntr.network.WaterNetworkModel(inp_file)
-
-pipe = wn.get_link('10')
-pipe.initial_status='CLOSED'
-
-
-#mod_pipe_name = ('10')
-#mod_pipe = wn.get_link(mod_pipe_name)
-#mod_pipe.initial_status='CLOSED'
-    
-# Graph the network
-wntr.graphics.plot_network(wn, title=wn.name)
-
-# Simulate hydraulics
-sim = wntr.sim.EpanetSimulator(wn)
-results = sim.run_sim()
-
-results.link['flowrate'].loc[:,'10'].plot()
-
-# Plot results on the network
-pressure_at_5hr = results.node['pressure'].loc[5*3600, :]
-wntr.graphics.plot_network(wn, node_attribute=pressure_at_5hr, node_size=30, 
-                        title='Pressure at 5 hours')
                 | "BT_START_ITER" (NewtonSolver.bt_start_iter)
         """
         if options is None:
