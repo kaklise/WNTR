@@ -4,7 +4,7 @@ from wntr.sim.solvers import PyomoSolver
 # Create a water network model
 inp_file = 'networks/Net1.inp'
 wn = wntr.network.WaterNetworkModel(inp_file)
-wn.options.hydraulic.demand_model = 'DD' # DD or PDD
+wn.options.hydraulic.demand_model = 'PDD' # DD or PDD
 
 # Create a WNTR steady state algebraic hydaulic model (this methods is used within the WNTRSimulator) 
 model, updater = wntr.sim.hydraulics.create_hydraulic_model(wn, HW_approx='piecewise')
@@ -27,13 +27,13 @@ print(pyomo_model.pprint())
 wn = wntr.network.WaterNetworkModel(inp_file)
 wn.options.time.duration = 24*3600
 sim = wntr.sim.WNTRSimulator(wn)
-results1 = sim.run_sim(HW_approx=HW_approx) # solver defaults to NewtonSolver
+results1 = sim.run_sim() # solver defaults to NewtonSolver
 
 # Solve using Pyomo and ipopt (PyomoSolver)
 wn = wntr.network.WaterNetworkModel(inp_file)
 wn.options.time.duration = 24*3600
 sim = wntr.sim.WNTRSimulator(wn)
-results2 = sim.run_sim(HW_approx=HW_approx, solver=PyomoSolver, solver_options={'tee': False})
+results2 = sim.run_sim(solver=PyomoSolver, solver_options={'tee': False})
 
 # Compare results
 head_sim = results1.node['head'].loc[6*3600, wn.junction_name_list]
