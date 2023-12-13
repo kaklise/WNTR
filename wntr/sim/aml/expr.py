@@ -538,7 +538,7 @@ class expression(ExpressionBase):
                             THEN = 1, 
                             ELSE = -1)
                 elif isinstance(oper, AbsOperator):
-                    val_dict[oper] = EXPR.AbsExpression(arg)
+                    val_dict[oper] = arg.__abs__()
                 else:
                     return
                     
