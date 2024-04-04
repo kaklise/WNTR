@@ -57,23 +57,34 @@ class DemandPatternLibrary(object):
                                 'source',
                                 'start_clocktime',
                                 'pattern_timestep',
+                                'pattern_start',
+                                'wrap',
                                 'multipliers']
 
         self.library[name] = entry
 
-    def combine_patterns(self, names, pattern_timestep=3600,
-                         pattern_duration=86400, start_clocktime=0,
+    def combine_patterns(self, names, duration=86400, wrap=True,
                          normalize=False, name='Combined'):
         """
         Combine patterns to create a new pattern
         """
+        first_entry = self.library[names[0]]
+        
+        pattern_timestep = first_entry['pattern_timestep']
+        pattern_start = first_entry['pattern_start']
+        start_clocktime = first_entry['start_clocktime']
+        
+        index = np.arange(start_clocktime, duration, pattern_timestep)
+        
         series = {}
-        for n in names:
-            series[n] = self.to_Series(n,
-                                       pattern_timestep=pattern_timestep,
-                                       pattern_duration=pattern_duration,
-                                       start_clocktime=start_clocktime)
-        df = pd.DataFrame(series)
+        for n in names: 
+            self.copy_pattern(n, 'temp')
+            self.library['temp']['start_clocktime'] = start_clocktime
+            self.library['temp']['pattern_timestep'] = pattern_timestep
+            multipliers = self.resample_multipliers('temp', duration)
+            series[n] = multipliers
+            
+        df = pd.DataFrame(index=index, data=series)
         multipliers = df.sum(axis=1)
 
         if normalize:
@@ -85,6 +96,8 @@ class DemandPatternLibrary(object):
          'source': None,
          'start_clocktime': start_clocktime,
          'pattern_timestep': pattern_timestep,
+         'pattern_start': pattern_start, 
+         'wrap': wrap,
          'multipliers': list(multipliers)}
 
         self.library[name] = entry
@@ -109,8 +122,10 @@ class DemandPatternLibrary(object):
         assert isinstance(name, str)
         assert isinstance(std, (int, float))
         assert isinstance(normalize, bool)
-
-        multipliers = self.library[name]['multipliers']
+        
+        entry = self.library[name]
+        
+        multipliers = entry['multipliers']
         noise = np.random.normal(0, std, len(multipliers))
         multipliers = multipliers + noise
 
@@ -118,10 +133,31 @@ class DemandPatternLibrary(object):
             multipliers = multipliers/multipliers.mean()
 
         self.library[name]['multipliers'] = list(multipliers)
-
-    def add_pulse_pattern(self, on_off_sequence, pattern_timestep=3600,
-                          pattern_duration=86400, start_clocktime=0,
-                          invert=False, normalize=False, name='Pulse'):
+        
+    def resample_multipliers(self, name, duration):
+        """
+        Resample multipliers, which can change if the start_clocktime, 
+        pattern_timestep, or wrap status changes
+        """
+        pattern = self.to_Pattern(name)
+        
+        entry = self.library[name]
+        start_clocktime = entry['start_clocktime']
+        pattern_timestep = entry['pattern_timestep']
+        
+        index = np.arange(start_clocktime, duration, pattern_timestep)
+        multipliers = []
+        for i in index:
+            multipliers.append(pattern.at(i))
+        
+        self.library[name]['multipliers'] = list(multipliers)
+        
+        return pd.Series(index=index, data=multipliers)
+        
+    def add_pulse_pattern(self, on_off_sequence, duration=86400, 
+                          pattern_timestep=3600, pattern_start=0, 
+                          start_clocktime=0, wrap=True, invert=False, 
+                          normalize=False, name='Pulse'):
         """
         Add a pulse pattern to the library using a sequence of on/off times
         """
@@ -129,7 +165,7 @@ class DemandPatternLibrary(object):
         assert isinstance(on_off_sequence, list)
         assert np.all(np.diff(on_off_sequence) > 0) # is monotonically increasing
 
-        index = np.arange(start_clocktime, pattern_duration, pattern_timestep)
+        index = np.arange(start_clocktime, duration, pattern_timestep)
         multipliers = pd.Series(index=index, data=0) # starts off
         switches = 0
         for time in on_off_sequence:
@@ -149,19 +185,22 @@ class DemandPatternLibrary(object):
          'source': None,
          'start_clocktime': start_clocktime,
          'pattern_timestep': pattern_timestep,
+         'pattern_start': pattern_start,
+         'wrap': wrap,
          'multipliers': list(multipliers)}
 
         self.library[name] = entry
 
-    def add_gaussian_pattern(self, mean, std, pattern_timestep=3600,
-                             pattern_duration=86400, start_clocktime=0,
+    def add_gaussian_pattern(self, mean, std, duration=86400, 
+                             pattern_timestep=3600, pattern_start=0, 
+                             start_clocktime=0, wrap=True,
                              invert=False, normalize=False, name='Gaussian'):
         """
         Add a Guassian pattern to the library defined by a mean and standard
         deviation
         """
 
-        index = np.arange(start_clocktime, pattern_duration, pattern_timestep)
+        index = np.arange(start_clocktime, duration, pattern_timestep)
         multipliers = scipy.stats.norm.pdf(index, mean, std)
 
         if invert:
@@ -176,13 +215,16 @@ class DemandPatternLibrary(object):
          'source': None,
          'start_clocktime': start_clocktime,
          'pattern_timestep': pattern_timestep,
+         'pattern_start': pattern_start, 
+         'wrap': wrap,
          'multipliers': list(multipliers)}
 
         self.library[name] = entry
 
-    def add_triangular_pattern(self, start, peak, end, pattern_timestep=3600,
-                               pattern_duration=86400, start_clocktime=0,
-                               invert=False, normalize=False, name='Triangular'):
+    def add_triangular_pattern(self, start, peak, end, duration=86400, 
+                               pattern_timestep=3600, pattern_start=0, 
+                               start_clocktime=0, wrap=True, invert=False, 
+                               normalize=False, name='Triangular'):
         """
         Add a traingular pattern to the library defined by a start time,
         peak time, and end time
@@ -191,7 +233,7 @@ class DemandPatternLibrary(object):
         scale = end-start
         c = (peak-start)/(end-start)
 
-        index = np.arange(start_clocktime, pattern_duration, pattern_timestep)
+        index = np.arange(start_clocktime, duration, pattern_timestep)
         multipliers = scipy.stats.triang.pdf(index, c, loc, scale)
 
         if invert:
@@ -206,6 +248,8 @@ class DemandPatternLibrary(object):
          'source': None,
          'start_clocktime': start_clocktime,
          'pattern_timestep': pattern_timestep,
+         'pattern_start': pattern_start, 
+         'wrap': wrap,
          'multipliers': list(multipliers)}
 
         self.library[name] = entry
@@ -216,36 +260,34 @@ class DemandPatternLibrary(object):
         """
 
         entry = self.library[name]
-        start_clocktime = entry['start_clocktime']
+        pattern_start = entry['pattern_start']
         pattern_timestep = entry['pattern_timestep']
         multipliers = entry['multipliers']
-        pattern = Pattern(name,
-                          multipliers,
-                          (start_clocktime, pattern_timestep),
-                          True)
+        wrap = entry['wrap']
+        pattern = Pattern(name=name,
+                          multipliers=multipliers,
+                          time_options=(pattern_start, pattern_timestep),
+                          wrap=wrap)
 
         return pattern
 
-    def to_Series(self, name, pattern_timestep=3600, pattern_duration=86400,
-                  start_clocktime=0):
+    def to_Series(self, name, duration=86400):
         """
         Convert the pattern library entry to a Pandas Series
         """
 
         entry = self.library[name]
 
-        if start_clocktime is None:
-            start_clocktime = entry['start_clocktime']
-        if pattern_timestep is None:
-            pattern_timestep = entry['pattern_timestep']
-        if pattern_duration is None:
+        start_clocktime = entry['start_clocktime']
+        pattern_timestep = entry['pattern_timestep']
+        if duration is None:
             multipliers = entry['multipliers']
-            pattern_duration = len(multipliers)*pattern_timestep
+            duration = len(multipliers)*pattern_timestep
 
         pattern = self.to_Pattern(name)
 
         # Get values at a particular time, can be used to resample
-        index = np.arange(start_clocktime, pattern_duration, pattern_timestep)
+        index = np.arange(start_clocktime, duration, pattern_timestep)
         data = []
         for i in index:
             data.append(pattern.at(i))
@@ -261,9 +303,7 @@ class DemandPatternLibrary(object):
             with open(filename, "w") as fout:
                 json.dump(self.library, fout)
 
-    def plot_patterns(self, names=None, pattern_timestep=3600,
-                      pattern_duration=86400, start_clocktime=0,
-                      linewidth=1.5, ax=None):
+    def plot_patterns(self, names=None, duration=None, linewidth=1.5, ax=None):
         """
         Plot patterns
         """
@@ -275,10 +315,12 @@ class DemandPatternLibrary(object):
             fig, ax = plt.subplots()
 
         for name in names:
-            series = self.to_Series(name,
-                                    pattern_timestep=pattern_timestep,
-                                    pattern_duration=pattern_duration,
-                                    start_clocktime=start_clocktime)
+            if duration is None:
+                entry = self.library[name]
+                entry_duration = len(entry['multipliers'])*entry['pattern_timestep']
+            else:
+                entry_duration = duration
+            series = self.to_Series(name, duration=entry_duration)
             series.plot(ax=ax, linewidth=linewidth, label=name)
 
         ax.legend()

@@ -6,20 +6,25 @@ print(DPL.library.keys())
 
 # Plot patterns
 DPL.plot_patterns() # plot all patterns in the library
-
 DPL.plot_patterns(names=['Net1 Pattern 1', 'Net2 Pattern 1', 'Net3 Pattern 1'])
 
-DPL.plot_patterns(names=['Net1 Pattern 1', 'Net2 Pattern 1', 'Net3 Pattern 1'], 
-                  pattern_timestep=None, pattern_duration=None, 
-                  start_clocktime=None)
+# Create new patterns based on Net2 Pattern 1
+multipliers = DPL.resample_multipliers('Net2 Pattern 1', 3*24*3600)
+print(multipliers)
 
-DPL.plot_patterns(names=['Net1 Pattern 1', 'Net2 Pattern 1', 'Net3 Pattern 1'], 
-                  pattern_timestep=7200)
+DPL.copy_pattern('Net2 Pattern 1', 'Net2 Pattern 1b')
+DPL.library['Net2 Pattern 1b']['start_clocktime'] = 0
+DPL.library['Net2 Pattern 1b']['pattern_timestep'] = 3600
+multipliers = DPL.resample_multipliers('Net2 Pattern 1b', 3*24*3600)
+print(multipliers)
 
-ax = DPL.plot_patterns(names=['Net2 Pattern 1'], pattern_timestep=None, 
-                       pattern_duration=None, start_clocktime=None, linewidth=5)
-ax = DPL.plot_patterns(names=['Net2 Pattern 1'], pattern_timestep=3600, 
-                       pattern_duration=3*24*3600, start_clocktime=0, ax=ax)
+DPL.copy_pattern('Net2 Pattern 1', 'Net2 Pattern 1c')
+DPL.library['Net2 Pattern 1c']['start_clocktime'] = 0
+DPL.library['Net2 Pattern 1c']['pattern_timestep'] = 3600
+DPL.library['Net2 Pattern 1c']['wrap'] = False
+multipliers = DPL.resample_multipliers('Net2 Pattern 1c', 3*24*3600)
+print(multipliers)
+DPL.plot_patterns(names=['Net2 Pattern 1b', 'Net2 Pattern 1c', 'Net2 Pattern 1'])
 
 # Filter patterns by category
 reidential_patterns = DPL.filter_by_category('Residential')
@@ -33,8 +38,7 @@ pattern = DPL.to_Pattern('Constant')
 # Convert to a Pandas Series and change time parameters, this could be used to 
 # update the pattern or create a new pattern
 series_1 = DPL.to_Series('Constant')
-series_24 = DPL.to_Series('Constant', pattern_duration=24*3600)
-series_24_2 = DPL.to_Series('Constant', pattern_duration=24*3600, pattern_timestep=2*3600)
+series_24 = DPL.to_Series('Constant', duration=24*3600)
 
 # Add pulse, gaussian, and traingular patterns to the libary
 DPL.add_pulse_pattern([3*3600,6*3600,14*3600,20*3600], normalize=True, name='Pulse')
@@ -48,6 +52,8 @@ DPL.plot_patterns(names=['Pulse', 'Pulse_invert', 'Gaussian', 'Triangular', 'Com
 DPL.copy_pattern('Gaussian', 'Gaussian_with_noise')
 DPL.apply_noise('Gaussian_with_noise', 0.1, normalize=True)
 DPL.plot_patterns(names=['Gaussian', 'Gaussian_with_noise'])
+
+DPL.write_json('New_demand_pattern_library.json')
 
 # Create a water network model
 wn = wntr.network.WaterNetworkModel('networks/Net3.inp')
@@ -83,4 +89,4 @@ wntr.graphics.plot_network(wn, node_attribute=pressure_at_5hr, node_size=30,
 
 print(wn.pattern_name_list)
 
-DPL.write_json('New_demand_pattern_library.json')
+
