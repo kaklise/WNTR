@@ -2,10 +2,9 @@
 	"Constant": {
 		"category": null,
 		"description": "Constant value",
-		"source": null,
+		"citation": null,
 		"start_clocktime": 0,
 		"pattern_timestep": 3600,
-		"pattern_start": 0,
 		"wrap": true,
 		"multipliers": [
 			1
@@ -14,10 +13,9 @@
 	"Net1 Pattern 1": {
 		"category": null,
 		"description": "Demand Pattern",
-		"source": "EPANET Net1",
+		"citation": "EPANET Net1",
 		"start_clocktime": 0,
 		"pattern_timestep": 7200,
-		"pattern_start": 0,
 		"wrap": true,
 		"multipliers": [
 			1.0, 1.2, 1.4, 1.6, 1.4, 1.2,
@@ -27,10 +25,9 @@
 	"Net2 Pattern 1": {
 		"category": null,
 		"description": "Demand Pattern",
-		"source": "EPANET Net2",
+		"citation": "EPANET Net2",
 		"start_clocktime": 28800,
 		"pattern_timestep": 3600,
-		"pattern_start": 0,
 		"wrap": true,
 		"multipliers": [
 			1.26, 1.04, 0.97, 0.97, 0.89, 1.19,
@@ -48,10 +45,9 @@
 	"Net3 Pattern 1": {
 		"category": null,
 		"description": "General Default Demand Pattern",
-		"source": "EPANET Net3",
+		"citation": "EPANET Net3",
 		"start_clocktime": 0,
 		"pattern_timestep": 3600,
-		"pattern_start": 0,
 		"wrap": true,
 		"multipliers": [
 			1.34, 1.94, 1.46, 1.44, 0.76, 0.92,
@@ -63,10 +59,9 @@
 	"Micropolis Pattern 1": {
 		"category": "Commercial",
 		"description": "Commercial - Elsie's Cafe",
-		"source": "UKnowledge Water Distribution System Research Database, https://uknowledge.uky.edu/wdst_synthetic/4/",
+		"citation": "Brumbelow, Kelly, 02 Micropolis (2021). Synthetic Systems. 4. https://uknowledge.uky.edu/wdst_synthetic/4",
 		"start_clocktime": 0,
 		"pattern_timestep": 3600,
-		"pattern_start": 0,
 		"wrap": true,
 		"multipliers": [
 			0.2, 0.2, 0.3, 0.5, 0.7, 0.7,
@@ -78,10 +73,9 @@
 	"Micropolis Pattern 2": {
 		"category": "Residential",
 		"description": "Residential",
-		"source": "UKnowledge Water Distribution System Research Database, https://uknowledge.uky.edu/wdst_synthetic/4/",
+		"citation": "Brumbelow, Kelly, 02 Micropolis (2021). Synthetic Systems. 4. https://uknowledge.uky.edu/wdst_synthetic/4",
 		"start_clocktime": 0,
 		"pattern_timestep": 3600,
-		"pattern_start": 0,
 		"wrap": true,
 		"multipliers": [
 			0.55, 0.55, 0.58, 0.67, 0.85, 1.05,
@@ -93,10 +87,9 @@
 	"Micropolis Pattern 3": {
 		"category": "Industrial",
 		"description": "Industrial - factory with 3 shifts",
-		"source": "UKnowledge Water Distribution System Research Database, https://uknowledge.uky.edu/wdst_synthetic/4/",
+		"citation": "Brumbelow, Kelly, 02 Micropolis (2021). Synthetic Systems. 4. https://uknowledge.uky.edu/wdst_synthetic/4",
 		"start_clocktime": 0,
 		"pattern_timestep": 3600,
-		"pattern_start": 0,
 		"wrap": true,
 		"multipliers": [
 			0.96, 0.96, 0.96, 0.96, 1.06, 1.07,
@@ -108,10 +101,9 @@
 	"Micropolis Pattern 4": {
 		"category": "Commercial",
 		"description": "Commercial - churches, schools, city hall, post office, grocery stores\t",
-		"source": "UKnowledge Water Distribution System Research Database, https://uknowledge.uky.edu/wdst_synthetic/4/",
+		"citation": "Brumbelow, Kelly, 02 Micropolis (2021). Synthetic Systems. 4. https://uknowledge.uky.edu/wdst_synthetic/4",
 		"start_clocktime": 0,
 		"pattern_timestep": 3600,
-		"pattern_start": 0,
 		"wrap": true,
 		"multipliers": [
 			0.2, 0.2, 0.3, 0.5, 0.7, 0.7,
@@ -123,10 +115,9 @@
 	"Micropolis Pattern 5": {
 		"category": "Commercial",
 		"description": "Commercial - Dairy Queen",
-		"source": "UKnowledge Water Distribution System Research Database, https://uknowledge.uky.edu/wdst_synthetic/4/",
+		"citation": "Brumbelow, Kelly, 02 Micropolis (2021). Synthetic Systems. 4. https://uknowledge.uky.edu/wdst_synthetic/4",
 		"start_clocktime": 0,
 		"pattern_timestep": 3600,
-		"pattern_start": 0,
 		"wrap": true,
 		"multipliers": [
 			0.1, 0.1, 0.1, 0.1, 0.2, 0.36,

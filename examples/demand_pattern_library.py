@@ -1,5 +1,5 @@
 import wntr
-from wntr.utils.libraries import DemandPatternLibrary
+from wntr.library import DemandPatternLibrary
 
 DPL = DemandPatternLibrary()
 print(DPL.library.keys())
@@ -8,6 +8,9 @@ print(DPL.library.keys())
 DPL.plot_patterns() # plot all patterns in the library
 DPL.plot_patterns(names=['Net1 Pattern 1', 'Net2 Pattern 1', 'Net3 Pattern 1'])
 
+DPL.add_combined_pattern(names=['Net1 Pattern 1', 'Net2 Pattern 1'], duration=3*24*3600, name='Combo Pattern 1')
+DPL.plot_patterns(names=['Net1 Pattern 1', 'Net2 Pattern 1', 'Combo Pattern 1'])
+                           
 # Create new patterns based on Net2 Pattern 1
 multipliers = DPL.resample_multipliers('Net2 Pattern 1', 3*24*3600)
 print(multipliers)
@@ -45,7 +48,7 @@ DPL.add_pulse_pattern([3*3600,6*3600,14*3600,20*3600], normalize=True, name='Pul
 DPL.add_pulse_pattern([3*3600,6*3600,14*3600,20*3600], invert=True, normalize=True, name='Pulse_invert')
 DPL.add_gaussian_pattern(12*3600, 5*3600, normalize=True, name='Gaussian')
 DPL.add_triangular_pattern(2*3600, 12*3600, 18*3600, normalize=True, name='Triangular')
-DPL.combine_patterns(['Pulse', 'Gaussian', 'Triangular'], normalize=True, name='Combined')
+DPL.add_combined_pattern(['Pulse', 'Gaussian', 'Triangular'], normalize=True, name='Combined')
 DPL.plot_patterns(names=['Pulse', 'Pulse_invert', 'Gaussian', 'Triangular', 'Combined'])
 
 # Copy pattern and apply noise
