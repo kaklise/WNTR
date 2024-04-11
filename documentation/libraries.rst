@@ -47,7 +47,7 @@ The demand pattern library includes the following capabilities:
 * Plot patterns
 * Save and load custom libraries for use in subsequent projects
 
-Each library entry has the following dictionary keys:
+Each library entry is defined as a dictionary with the following keys:
 
 * **name**: Pattern name (string)
 * **category**: Pattern category (string, optional)
@@ -57,6 +57,10 @@ Each library entry has the following dictionary keys:
 * **pattern_timestep**: Pattern timestep in seconds (integer)
 * **wrap**: Indicates if the sequence of pattern values repeats (True or False)
 * **multipliers**: Pattern values (list of floats)
+
+Note that the pattern duration is not explicitly defined.  Duration is inferred from the list of multipliers and the pattern timestep.
+Several methods include duration as a optional input argument to change how long multipliers are repeated.  
+If wrap = False, the pattern values are set to 0 after the final multiplier value.
 
 A default demand pattern library loads a JSON file that contains patterns from Net1, Net2, Net3, and Micropolis water network models.  
 Additional patterns could be added to the default library.
@@ -178,7 +182,7 @@ can be resampled so it can be used in Net1, which has a start clocktime of 0 sec
 
    Demand patterns, with and without resampling to match the start clocktime and pattern timestep of Net1.
    
-Add the new pattern to a WaterNetworkModel of Net1.
+Add the new pattern to a :class:`~wntr.network.model.WaterNetworkModel` of Net1.
 
 .. doctest::
 
