@@ -2,32 +2,24 @@ import wntr
 from wntr.library import DemandPatternLibrary
 
 DPL = DemandPatternLibrary()
-print(DPL.library.keys())
+print(DPL.entry_name_list)
+
+DPL.normalize_pattern('Net1_1')
 
 # Plot patterns
 DPL.plot_patterns() # plot all patterns in the library
-DPL.plot_patterns(names=['Net1 Pattern 1', 'Net2 Pattern 1', 'Net3 Pattern 1'])
+DPL.plot_patterns(names=['Net1_1', 'Net2_1', 'Net3_1'])
 
-DPL.add_combined_pattern(names=['Net1 Pattern 1', 'Net2 Pattern 1'], duration=3*24*3600, name='Combo Pattern 1')
-DPL.plot_patterns(names=['Net1 Pattern 1', 'Net2 Pattern 1', 'Combo Pattern 1'])
+DPL.add_combined_pattern(names=['Net1_1', 'Net2_1'], duration=3*24*3600, name='Combo_1')
+DPL.plot_patterns(names=['Net1_1', 'Net2_1', 'Combo_1'])
                            
 # Create new patterns based on Net2 Pattern 1
-multipliers = DPL.resample_multipliers('Net2 Pattern 1', 3*24*3600)
-print(multipliers)
+DPL.copy_pattern('Net2_1', 'Net2_1_resampled')
+multipliers = DPL.resample_multipliers('Net2_1_resampled', duration=3*24*3600,
+                                       pattern_timestep=7200, start_clocktime=0)
 
-DPL.copy_pattern('Net2 Pattern 1', 'Net2 Pattern 1b')
-DPL.library['Net2 Pattern 1b']['start_clocktime'] = 0
-DPL.library['Net2 Pattern 1b']['pattern_timestep'] = 3600
-multipliers = DPL.resample_multipliers('Net2 Pattern 1b', 3*24*3600)
 print(multipliers)
-
-DPL.copy_pattern('Net2 Pattern 1', 'Net2 Pattern 1c')
-DPL.library['Net2 Pattern 1c']['start_clocktime'] = 0
-DPL.library['Net2 Pattern 1c']['pattern_timestep'] = 3600
-DPL.library['Net2 Pattern 1c']['wrap'] = False
-multipliers = DPL.resample_multipliers('Net2 Pattern 1c', 3*24*3600)
-print(multipliers)
-DPL.plot_patterns(names=['Net2 Pattern 1b', 'Net2 Pattern 1c', 'Net2 Pattern 1'])
+DPL.plot_patterns(names=['Net2_1', 'Net2_1_resampled'])
 
 # Filter patterns by category
 reidential_patterns = DPL.filter_by_category('Residential')
@@ -59,10 +51,10 @@ DPL.plot_patterns(names=['Gaussian', 'Gaussian_with_noise'])
 DPL.write_json('New_demand_pattern_library.json')
 
 # Create a water network model
-wn = wntr.network.WaterNetworkModel('networks/Net3.inp')
+wn = wntr.network.WaterNetworkModel('networks/Net1.inp')
 
 # Get demands associated with a junction
-junction = wn.get_node('15')
+junction = wn.get_node('11')
 print(junction.demand_timeseries_list)
 
 # Modify the base value and pattern of the original demand
@@ -71,9 +63,10 @@ junction.demand_timeseries_list[0].pattern_name = '1'
 junction.demand_timeseries_list[0].category = 'A'
 
 # Add a new pattern from the pattern library, then add a demand
-pattern = DPL.to_Pattern('Pulse')
-wn.add_pattern('Pulse', pattern)
-junction.add_demand(base=5e-5, pattern_name='Pulse', category='B')
+print(wn.options.time.pattern_timestep, wn.options.time.start_clocktime)
+pattern = DPL.to_Pattern('Net2_1_resampled')
+wn.add_pattern('Net2_1_resample', pattern)
+junction.add_demand(base=5e-5, pattern_name='Net2_1_resample', category='B')
 print(junction.demand_timeseries_list)
 
 # Add another pattern from a list, then add a demand

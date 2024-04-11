@@ -12,88 +12,114 @@ NoneType = type(None)
 
 class DemandPatternLibrary(object):
 
-    def __init__(self, filename=None):
-
-        if isinstance(filename, NoneType):
+    def __init__(self, filename_or_data=None):
+        
+        self.library = {}
+        if isinstance(filename_or_data, NoneType):
             filename = join(libdir, 'DemandPatternLibrary.json')
-        if isinstance(filename, str):
             with open(filename, "r") as fin:
-                self.library = json.load(fin)
-
-    def filter_by_category(self, category):
+                data = json.load(fin)
+        elif isinstance(filename_or_data, str):
+            filename = filename_or_data
+            with open(filename, "r") as fin:
+                data = json.load(fin)
+        elif isinstance(filename_or_data, list):
+            data = filename_or_data
+        
+        for entry in data:
+            name = entry['name']
+            self.library[name] = entry
+    
+    @property
+    def pattern_name_list(self):
         """
-        Filter library by category
+        Return a list of demand pattern entry names
         """
-
-        assert isinstance(category, (str, NoneType))
-
-        names = []
-        for name in self.library.keys():
-            if self.library[name]['category'] == category:
-                names.append(name)
-
-        return dict((k, self.library[k]) for k in names)
-
+        return list(self.library.keys())
+    
+    def get_pattern(self, name):
+        """
+        Return a pattern entry from the demand pattern library
+        """
+        return self.library[name]
+    
+    def remove_pattern(self, name):
+        """
+        Remove a pattern from the demand pattern library
+        """
+        del self.library[name]
+    
     def copy_pattern(self, name, new_name):
         """
         Add a copy of an existing pattern to the library
         """
-
         assert isinstance(name, str)
         assert isinstance(new_name, str)
         assert name != new_name
 
         entry = self.library[name].copy()
+        entry['name'] = new_name
         self.library[new_name] = entry
+
+    def filter_by_category(self, category):
+        """
+        Filter library by category
+        """
+        assert isinstance(category, (str, NoneType))
+
+        subset = []
+        for name in self.library.keys():
+            entry = self.library[name]
+            if entry['category'] == category:
+                subset.append(entry)
+
+        return subset
 
     def normalize_pattern(self, name, inplace=True):
         """
         Normalize values in a pattern so the mean equals 1
         """
-
         assert isinstance(name, str)
 
-        multipliers = self.library[name]['multipliers']
-        multipliers = multipliers/multipliers.mean()
+        series = self.to_Series(name, duration=None)
+        series = series/series.mean()
         
         if inplace:
-            self.library[name]['multipliers'] = multipliers.values()
+            self.library[name]['multipliers'] = list(series)
         
-        return multipliers
+        return series
     
-    def apply_noise(self, name, std, normalize=False, inplace=True):
+    def apply_noise(self, name, std, normalize=False, seed=None, inplace=True):
         """
         Apply gaussian random noise to a pattern
         """
-
         assert isinstance(name, str)
         assert isinstance(std, (int, float))
         assert isinstance(normalize, bool)
         
-        entry = self.library[name]
+        np.random.seed(seed)
         
-        multipliers = entry['multipliers']
-        noise = np.random.normal(0, std, len(multipliers))
-        multipliers = multipliers + noise
+        series = self.to_Series(name, duration=None)
+        
+        noise = np.random.normal(0, std, len(series))
+        series = series + noise
 
         if normalize:
-            multipliers = multipliers/multipliers.mean()
+            series = series/series.mean()
 
         if inplace:
-            self.library[name]['multipliers'] = list(multipliers)
+            self.library[name]['multipliers'] = list(series)
         
-        return multipliers
+        return series
         
-    def resample_multipliers(self, name, duration, inplace=True):
+    def resample_multipliers(self, name, duration=86400, 
+                             pattern_timestep=3600, start_clocktime=0,
+                             wrap=True, inplace=True):
         """
         Resample multipliers, which can change if the start_clocktime, 
         pattern_timestep, or wrap status changes
         """
         pattern = self.to_Pattern(name)
-        
-        entry = self.library[name]
-        start_clocktime = entry['start_clocktime']
-        pattern_timestep = entry['pattern_timestep']
         
         index = np.arange(start_clocktime, duration, pattern_timestep)
         multipliers = []
@@ -101,6 +127,9 @@ class DemandPatternLibrary(object):
             multipliers.append(pattern.at(i))
         
         if inplace:
+            self.library[name]['start_clocktime'] = start_clocktime
+            self.library[name]['pattern_timestep'] = pattern_timestep
+            self.library[name]['wrap'] = wrap
             self.library[name]['multipliers'] = list(multipliers)
         
         return pd.Series(index=index, data=multipliers)
@@ -111,7 +140,8 @@ class DemandPatternLibrary(object):
         """
         assert isinstance(name, str)
         assert isinstance(entry, dict)
-        assert entry.keys() <= ['category',
+        assert entry.keys() <= ['name',
+                                'category',
                                 'description',
                                 'citation',
                                 'start_clocktime',
@@ -128,7 +158,6 @@ class DemandPatternLibrary(object):
         """
         Add a pulse pattern to the library using a sequence of on/off times
         """
-
         assert isinstance(on_off_sequence, list)
         assert np.all(np.diff(on_off_sequence) > 0) # is monotonically increasing
 
@@ -146,14 +175,14 @@ class DemandPatternLibrary(object):
         if normalize:
             multipliers = multipliers/multipliers.mean()
 
-        entry = {
-         'category': None,
-         'description': None,
-         'citation': None,
-         'start_clocktime': start_clocktime,
-         'pattern_timestep': pattern_timestep,
-         'wrap': wrap,
-         'multipliers': list(multipliers)}
+        entry = {'name': name,
+                 'category': None,
+                 'description': None,
+                 'citation': None,
+                 'start_clocktime': start_clocktime,
+                 'pattern_timestep': pattern_timestep,
+                 'wrap': wrap,
+                 'multipliers': list(multipliers)}
 
         self.library[name] = entry
 
@@ -175,14 +204,14 @@ class DemandPatternLibrary(object):
         if normalize:
             multipliers = multipliers/multipliers.mean()
 
-        entry = {
-         'category': None,
-         'description': None,
-         'citation': None,
-         'start_clocktime': start_clocktime,
-         'pattern_timestep': pattern_timestep,
-         'wrap': wrap,
-         'multipliers': list(multipliers)}
+        entry = {'name': name,
+                 'category': None,
+                 'description': None,
+                 'citation': None,
+                 'start_clocktime': start_clocktime,
+                 'pattern_timestep': pattern_timestep,
+                 'wrap': wrap,
+                 'multipliers': list(multipliers)}
 
         self.library[name] = entry
 
@@ -207,14 +236,14 @@ class DemandPatternLibrary(object):
         if normalize:
             multipliers = multipliers/multipliers.mean()
 
-        entry = {
-         'category': None,
-         'description': None,
-         'citation': None,
-         'start_clocktime': start_clocktime,
-         'pattern_timestep': pattern_timestep,
-         'wrap': wrap,
-         'multipliers': list(multipliers)}
+        entry = {'name': name, 
+                 'category': None,
+                 'description': None,
+                 'citation': None,
+                 'start_clocktime': start_clocktime,
+                 'pattern_timestep': pattern_timestep,
+                 'wrap': wrap,
+                 'multipliers': list(multipliers)}
 
         self.library[name] = entry
 
@@ -247,14 +276,14 @@ class DemandPatternLibrary(object):
         if normalize:
             multipliers = multipliers/multipliers.mean()
     
-        entry = {
-         'category': None,
-         'description': None,
-         'citation': None,
-         'start_clocktime': start_clocktime,
-         'pattern_timestep': pattern_timestep,
-         'wrap': wrap,
-         'multipliers': list(multipliers)}
+        entry = {'name': name, 
+                 'category': None,
+                 'description': None,
+                 'citation': None,
+                 'start_clocktime': start_clocktime,
+                 'pattern_timestep': pattern_timestep,
+                 'wrap': wrap,
+                 'multipliers': list(multipliers)}
     
         self.library[name] = entry
 
@@ -307,9 +336,13 @@ class DemandPatternLibrary(object):
         """
         Write the library to a JSON file
         """
+        data = []
+        for name, entry in self.library.items():
+            data.append(entry)
+            
         if isinstance(filename, str):
             with open(filename, "w") as fout:
-                json.dump(self.library, fout)
+                json.dump(data, fout)
 
     def plot_patterns(self, names=None, duration=None, linewidth=1.5, ax=None):
         """
