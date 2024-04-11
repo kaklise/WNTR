@@ -28,7 +28,7 @@ class DemandPatternLibrary(object):
         
         for entry in data:
             name = entry['name']
-            self.library[name] = entry
+            self.add_pattern(name, entry)
     
     @property
     def pattern_name_list(self):
@@ -57,9 +57,9 @@ class DemandPatternLibrary(object):
         assert isinstance(new_name, str)
         assert name != new_name
 
-        entry = self.library[name].copy()
+        entry = self.get_pattern(name).copy()
         entry['name'] = new_name
-        self.library[new_name] = entry
+        self.add_pattern(new_name, entry)
 
     def filter_by_category(self, category):
         """
@@ -68,8 +68,8 @@ class DemandPatternLibrary(object):
         assert isinstance(category, (str, NoneType))
 
         subset = []
-        for name in self.library.keys():
-            entry = self.library[name]
+        for name in self.pattern_name_list:
+            entry = self.get_pattern(name)
             if entry['category'] == category:
                 subset.append(entry)
 
@@ -119,12 +119,17 @@ class DemandPatternLibrary(object):
         Resample multipliers, which can change if the start_clocktime, 
         pattern_timestep, or wrap status changes
         """
+        # Pattern defined using the current time parameters
+        entry = self.get_pattern(name)
+        entry_start_clocktime = entry['start_clocktime']
+
         pattern = self.to_Pattern(name)
         
+        # index uses new time parameters
         index = np.arange(start_clocktime, duration, pattern_timestep)
         multipliers = []
         for i in index:
-            multipliers.append(pattern.at(i))
+            multipliers.append(pattern.at(i-entry_start_clocktime))
         
         if inplace:
             self.library[name]['start_clocktime'] = start_clocktime
@@ -140,14 +145,12 @@ class DemandPatternLibrary(object):
         """
         assert isinstance(name, str)
         assert isinstance(entry, dict)
-        assert entry.keys() <= ['name',
-                                'category',
-                                'description',
-                                'citation',
-                                'start_clocktime',
-                                'pattern_timestep',
-                                'wrap',
-                                'multipliers']
+        required_keys = ['name', 
+                         'start_clocktime', 
+                         'pattern_timestep', 
+                         'wrap', 
+                         'multipliers']
+        assert set(required_keys) <= set(entry.keys())
 
         self.library[name] = entry
         
@@ -184,7 +187,7 @@ class DemandPatternLibrary(object):
                  'wrap': wrap,
                  'multipliers': list(multipliers)}
 
-        self.library[name] = entry
+        self.add_pattern(name, entry)
 
     def add_gaussian_pattern(self, mean, std, duration=86400, 
                              pattern_timestep=3600, start_clocktime=0, 
@@ -213,7 +216,7 @@ class DemandPatternLibrary(object):
                  'wrap': wrap,
                  'multipliers': list(multipliers)}
 
-        self.library[name] = entry
+        self.add_pattern(name, entry)
 
     def add_triangular_pattern(self, start, peak, end, duration=86400, 
                                pattern_timestep=3600, start_clocktime=0,
@@ -245,7 +248,7 @@ class DemandPatternLibrary(object):
                  'wrap': wrap,
                  'multipliers': list(multipliers)}
 
-        self.library[name] = entry
+        self.add_pattern(name, entry)
 
     def add_combined_pattern(self, names, duration=86400, 
                              pattern_timestep=3600, start_clocktime=0,
@@ -255,18 +258,15 @@ class DemandPatternLibrary(object):
         """
         series = {}
         for n in names: 
-            entry = self.library[n]
+            entry = self.get_pattern(n)
             entry_start_clocktime = entry['start_clocktime']
             
-            # For example, if the start_clocktime = 3:00 and the 
-            # entry_start_clocktime = 1:00, then the adjusted_start_clocktime = -2:00
-            adjusted_start_clocktime = entry_start_clocktime - start_clocktime
-            pattern = self.to_Pattern(n, pattern_start = adjusted_start_clocktime)
+            pattern = self.to_Pattern(n)
     
             index = np.arange(start_clocktime, duration, pattern_timestep)
             multipliers = []
             for i in index:
-                multipliers.append(pattern.at(i))
+                multipliers.append(pattern.at(i-start_clocktime))
     
             series[n] = pd.Series(index=index, data=multipliers)
             
@@ -285,41 +285,41 @@ class DemandPatternLibrary(object):
                  'wrap': wrap,
                  'multipliers': list(multipliers)}
     
-        self.library[name] = entry
+        self.add_pattern(name, entry)
 
-
-    def to_Pattern(self, name, pattern_start=None):
+    def to_Pattern(self, name, pattern_start=0):
         """
         Convert the pattern library entry to a WNTR Pattern
         """
 
-        entry = self.library[name]
-        if pattern_start is None:
-            start_clocktime = entry['start_clocktime']
-        else:
-            start_clocktime = pattern_start
+        entry = self.get_pattern(name)
+
+        # Note pattern_start is only used by the EpanetSimulator or WNTRSimulator
         pattern_timestep = entry['pattern_timestep']
+        pattern_interpolation=True
         multipliers = entry['multipliers']
         wrap = entry['wrap']
         pattern = Pattern(name=name,
                           multipliers=multipliers,
-                          time_options=(start_clocktime, pattern_timestep),
+                          time_options=(pattern_start, 
+                                        pattern_timestep, 
+                                        pattern_interpolation),
                           wrap=wrap)
 
         return pattern
 
-    def to_Series(self, name, duration=86400):
+    def to_Series(self, name, duration=None):
         """
         Convert the pattern library entry to a Pandas Series
         """
 
-        entry = self.library[name]
+        entry = self.get_pattern(name)
 
         start_clocktime = entry['start_clocktime']
         pattern_timestep = entry['pattern_timestep']
         if duration is None:
             multipliers = entry['multipliers']
-            duration = len(multipliers)*pattern_timestep
+            duration = start_clocktime + len(multipliers)*pattern_timestep
 
         pattern = self.to_Pattern(name)
 
@@ -327,7 +327,7 @@ class DemandPatternLibrary(object):
         index = np.arange(start_clocktime, duration, pattern_timestep)
         data = []
         for i in index:
-            data.append(pattern.at(i))
+            data.append(pattern.at(i-start_clocktime))
         series = pd.Series(index=index, data=data)
 
         return series
@@ -350,18 +350,13 @@ class DemandPatternLibrary(object):
         """
 
         if names is None:
-            names = self.library.keys()
+            names = self.pattern_name_list
 
         if ax is None:
             fig, ax = plt.subplots()
 
         for name in names:
-            if duration is None:
-                entry = self.library[name]
-                entry_duration = len(entry['multipliers'])*entry['pattern_timestep']
-            else:
-                entry_duration = duration
-            series = self.to_Series(name, duration=entry_duration)
+            series = self.to_Series(name, duration=duration)
             series.plot(ax=ax, linewidth=linewidth, label=name)
 
         ax.legend()
