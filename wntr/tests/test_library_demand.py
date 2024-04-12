@@ -57,7 +57,7 @@ class TestDemandPatternLibrary(unittest.TestCase):
 
         DPL.copy_pattern('Net2_1', 'Net2_1_resampled')
         multipliers = DPL.resample_multipliers('Net2_1_resampled', duration=3*24*3600,
-                                               pattern_timestep=3600, start_clocktime=0)
+                                               pattern_timestep=7200, start_clocktime=0)
 
         print(multipliers)
         DPL.plot_patterns(names=['Net2_1_resampled', 'Net2_1'])
@@ -105,7 +105,7 @@ class TestDemandPatternLibrary(unittest.TestCase):
 
         # Add a new pattern from the pattern library, then add a demand
         print(wn.options.time.pattern_timestep, wn.options.time.start_clocktime)
-        pattern = DPL.to_Pattern('Net2_1_resampled')
+        pattern = DPL.to_Pattern('Net2_1_resampled', wn.options.time)
         wn.add_pattern('Net2_1_resample', pattern)
         junction.add_demand(base=5e-5, pattern_name='Net2_1_resample', category='B')
         print(junction.demand_timeseries_list)

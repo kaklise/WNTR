@@ -6,6 +6,7 @@ import json
 from os.path import abspath, dirname, join
 
 from wntr.network.elements import Pattern
+from wntr.network.options import TimeOptions
 
 libdir = dirname(abspath(str(__file__)))
 NoneType = type(None)
@@ -287,23 +288,35 @@ class DemandPatternLibrary(object):
     
         self.add_pattern(name, entry)
 
-    def to_Pattern(self, name, pattern_start=0):
+    def to_Pattern(self, name, time_options=None):
         """
         Convert the pattern library entry to a WNTR Pattern
         """
-
+        assert isinstance(name, str)
+        assert isinstance(time_options, (TimeOptions, tuple, NoneType))
+    
         entry = self.get_pattern(name)
-
-        # Note pattern_start is only used by the EpanetSimulator or WNTRSimulator
         pattern_timestep = entry['pattern_timestep']
-        pattern_interpolation=True
+        start_clocktime = entry['start_clocktime']
+        
+        if time_options is None:
+            pattern_start = 0
+            pattern_interpolation=True
+            time_options = (pattern_start, 
+                            pattern_timestep, 
+                            pattern_interpolation)
+        elif isinstance(time_options, TimeOptions):
+            assert time_options.pattern_timestep == pattern_timestep
+            assert time_options.start_clocktime == start_clocktime
+        elif isinstance(time_options, tuple):
+            assert time_options[1] == pattern_timestep
+            
+        # Note pattern_start is only used by the EpanetSimulator or WNTRSimulator
         multipliers = entry['multipliers']
         wrap = entry['wrap']
         pattern = Pattern(name=name,
                           multipliers=multipliers,
-                          time_options=(pattern_start, 
-                                        pattern_timestep, 
-                                        pattern_interpolation),
+                          time_options=time_options,
                           wrap=wrap)
 
         return pattern
