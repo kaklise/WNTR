@@ -83,6 +83,8 @@ class DemandPatternLibrary(object):
         assert isinstance(name, str)
 
         series = self.to_Series(name, duration=None)
+        if series.min() < 0:
+            series = series - series.min()
         series = series/series.mean()
         
         if inplace:
@@ -251,31 +253,38 @@ class DemandPatternLibrary(object):
 
         self.add_pattern(name, entry)
 
-    def add_combined_pattern(self, names, duration=86400, 
+    def add_combined_pattern(self, names, duration=86400, weights=None,
                              pattern_timestep=3600, start_clocktime=0,
                              wrap=True, normalize=False, name='Combined'):
         """
-        Combine patterns to create a new pattern
+        Combine overlapping patterns to create a new pattern
         """
+        if weights is None:
+            weights = [1]*len(names)
+        assert isinstance(weights, list)
+        assert len(names) == len(weights)
+        
         series = {}
-        for n in names: 
+        for i, n in enumerate(names):
+            weight = weights[i]
+            
             entry = self.get_pattern(n)
-            entry_start_clocktime = entry['start_clocktime']
+            #entry_start_clocktime = entry['start_clocktime']
             
             pattern = self.to_Pattern(n)
     
             index = np.arange(start_clocktime, duration, pattern_timestep)
-            multipliers = []
+            values = []
             for i in index:
-                multipliers.append(pattern.at(i-start_clocktime))
+                values.append(pattern.at(i-start_clocktime))
     
-            series[n] = pd.Series(index=index, data=multipliers)
+            series[n+str(i)] = pd.Series(index=index, data=values*weight)
             
         df = pd.DataFrame(index=index, data=series)
-        multipliers = df.sum(axis=1)
+        series = df.sum(axis=1)
     
         if normalize:
-            multipliers = multipliers/multipliers.mean()
+            series = series/series.mean()
     
         entry = {'name': name, 
                  'category': None,
@@ -284,10 +293,65 @@ class DemandPatternLibrary(object):
                  'start_clocktime': start_clocktime,
                  'pattern_timestep': pattern_timestep,
                  'wrap': wrap,
-                 'multipliers': list(multipliers)}
+                 'multipliers': list(series)}
     
         self.add_pattern(name, entry)
+        
+        return series
 
+    def add_sequential_pattern(self, names, durations, weights=None,
+                             pattern_timestep=3600, start_clocktime=0,
+                             wrap=True, normalize=False, name='Sequential'):
+        """
+        Combine sequential patterns to create a new pattern
+        """
+        assert isinstance(names, list)
+        assert isinstance(durations, list)
+        assert len(names) == len(durations)
+        if weights is None:
+            weights = [1]*len(names)
+        assert isinstance(weights, list)
+        assert len(names) == len(weights)
+            
+        t = start_clocktime
+        series = {}
+        for i, n in enumerate(names):
+            
+            duration = durations[i]
+            weight = weights[i]
+            
+            entry = self.get_pattern(n)
+            #entry_start_clocktime = entry['start_clocktime']
+            
+            pattern = self.to_Pattern(n)
+    
+            index = np.arange(t, t + duration, pattern_timestep)
+            values = []
+            for i in index:
+                values.append(pattern.at(i-start_clocktime))
+    
+            series[n+str(i)] = pd.Series(index=index, data=np.array(values)*weight)
+            
+            t = t + duration
+            
+        series = pd.concat(series)
+    
+        if normalize:
+            series = series/series.mean()
+    
+        entry = {'name': name, 
+                 'category': None,
+                 'description': None,
+                 'citation': None,
+                 'start_clocktime': start_clocktime,
+                 'pattern_timestep': pattern_timestep,
+                 'wrap': wrap,
+                 'multipliers': list(series)}
+    
+        self.add_pattern(name, entry)
+        
+        return series.droplevel(0)
+        
     def to_Pattern(self, name, time_options=None):
         """
         Convert the pattern library entry to a WNTR Pattern
