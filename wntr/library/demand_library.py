@@ -434,8 +434,11 @@ class DemandPatternLibrary(object):
 
         for name in names:
             series = self.to_Series(name, duration=duration)
+            series.index = series.index/3600
             series.plot(ax=ax, linewidth=linewidth, label=name)
-
+            
+        ax.set_ylabel('Demand Multiplier')
+        ax.set_xlabel('Time (hr)')
         ax.legend()
 
         return ax

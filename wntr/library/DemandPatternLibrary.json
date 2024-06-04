@@ -1,5 +1,15 @@
 [   
 	{
+		"name": "Null",
+		"category": null,
+		"description": "Null",
+		"citation": null,
+		"start_clocktime": 0,
+		"pattern_timestep": 3600,
+		"wrap": true,
+		"multipliers": [0]
+	},
+	{
 		"name": "Constant",
 		"category": null,
 		"description": "Constant value",
