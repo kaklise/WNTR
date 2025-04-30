@@ -33,7 +33,6 @@ Key Features in WNTR
    installation
    wntr-api
    users
-   S-WNTR <stormwater>
 
 .. include:: citing_wntr.rst
 

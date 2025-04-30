@@ -86,6 +86,14 @@ U.S. Department of Energy's National Nuclear Security Administration under contr
    graphics
    gis
    advancedsim
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Extensions
+   
+   extensions
+   stormwater
    
 .. toctree::
     :maxdepth: 1
