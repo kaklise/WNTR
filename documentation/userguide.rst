@@ -93,7 +93,7 @@ U.S. Department of Energy's National Nuclear Security Administration under contr
    :caption: Extensions
    
    extensions
-   stormwater
+   extensions/stormwater
    
 .. toctree::
     :maxdepth: 1

@@ -32,7 +32,7 @@ WNTR documentation
    graphics
    gis
    advancedsim
-   stormwater
+   extensions
    license
    users	   
    developers

@@ -22,8 +22,8 @@ except ModuleNotFoundError:
     has_pyswmm = False
 
 from wntr.sim import SimulationResults
-from wntr.stormwater.gis import StormWaterNetworkGIS
-import wntr.stormwater
+from wntr.extensions.stormwater.gis import StormWaterNetworkGIS
+import wntr.extensions.stormwater
 
 logger = logging.getLogger(__name__)
 

@@ -6,7 +6,7 @@ import networkx as nx
 import pandas as pd
 
 from wntr.metrics.topographic import *
-from wntr.stormwater.network import StormWaterNetworkModel
+from wntr.extensions.stormwater.network import StormWaterNetworkModel
 
 def headloss(head, swn, link_names=None):
     """

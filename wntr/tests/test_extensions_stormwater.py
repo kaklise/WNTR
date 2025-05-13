@@ -1,4 +1,5 @@
 import unittest
+import pytest
 import warnings
 import os
 from os.path import abspath, dirname, join, isfile
@@ -21,7 +22,7 @@ try:
 except ModuleNotFoundError:
     pyswmm = None
 
-import wntr.stormwater as swntr
+import wntr.extensions.stormwater as swntr
 
 
 testdir = dirname(abspath(str(__file__)))
@@ -31,6 +32,7 @@ ex_datadir = join(testdir, "..", "..", "examples", "networks")
 
 @unittest.skipIf(not has_swmmio,
                  "Cannot test SWNTR capabilities: swmmio is missing")
+@pytest.mark.extensions
 class TestStormWaterModel(unittest.TestCase):
 
     @classmethod

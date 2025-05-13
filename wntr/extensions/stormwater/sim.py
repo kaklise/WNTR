@@ -14,7 +14,7 @@ except ModuleNotFoundError:
     swmmio = None
     has_swmmio = False
 
-from wntr.stormwater.io import write_inpfile, read_outfile, read_rptfile
+from wntr.extensions.stormwater.io import write_inpfile, read_outfile, read_rptfile
 
 os.environ["CONDA_DLL_SEARCH_MODIFICATION_ENABLE"] = "1"
 # See https://github.com/OpenWaterAnalytics/pyswmm/issues/298

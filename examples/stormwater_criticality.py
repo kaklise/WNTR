@@ -1,6 +1,6 @@
 # Conduit criticality analysis
 import matplotlib.pylab as plt
-import wntr.stormwater as swntr
+import wntr.extensions.stormwater as swntr
 
 inp_file = 'networks/Site_Drainage_Model.inp'
 swn = swntr.network.StormWaterNetworkModel(inp_file)

@@ -17,7 +17,7 @@ except ModuleNotFoundError:
     swmmio = None
     has_swmmio = False
 
-from wntr.stormwater.io import to_graph, to_gis
+from wntr.extensions.stormwater.io import to_graph, to_gis
 
 logger = logging.getLogger(__name__)
 
