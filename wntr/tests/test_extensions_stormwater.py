@@ -141,6 +141,7 @@ class TestStormWaterModel(unittest.TestCase):
 
 @unittest.skipIf(not has_swmmio,
                  "Cannot test SWNTR capabilities: swmmio is missing")
+@pytest.mark.extensions
 class TestStormWaterSim(unittest.TestCase):
 
     @classmethod
@@ -261,6 +262,7 @@ class TestStormWaterSim(unittest.TestCase):
 
 @unittest.skipIf(not has_swmmio,
                  "Cannot test SWNTR capabilities: swmmio is missing")
+@pytest.mark.extensions
 class TestStormWaterScenarios(unittest.TestCase):
 
     def test_conduit_reduced_flow(self):
@@ -321,6 +323,7 @@ class TestStormWaterScenarios(unittest.TestCase):
 
 @unittest.skipIf(not has_swmmio,
                  "Cannot test SWNTR capabilities: swmmio is missing")
+@pytest.mark.extensions
 class TestStormWaterMetrics(unittest.TestCase):
 
     @classmethod
@@ -495,6 +498,7 @@ class TestStormWaterMetrics(unittest.TestCase):
     
 @unittest.skipIf(not has_swmmio,
                  "Cannot test SWNTR capabilities: swmmio is missing")
+@pytest.mark.extensions
 class TestStormWaterGIS(unittest.TestCase):
     
     @classmethod
@@ -538,6 +542,7 @@ class TestStormWaterGIS(unittest.TestCase):
 
 @unittest.skipIf(not has_swmmio,
                  "Cannot test SWNTR capabilities: swmmio is missing")
+@pytest.mark.extensions
 class TestStormWaterGraphics(unittest.TestCase):
     
     @classmethod

@@ -30,9 +30,8 @@ Stormwater/wastewater analysis
 
 
 .. note:: 
-   Stormwater and wastewater resilience analysis capabilities in WNTR are new
-   and should be considered beta software. 
-   Feedback can be posted at https://github.com/USEPA/WNTR/issues.
+   Stormwater and wastewater resilience analysis capabilities are a 
+   WNTR extension and should be considered beta software. 
 
 Overview 
 --------
