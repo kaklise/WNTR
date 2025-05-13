@@ -17,7 +17,7 @@ WNTR currently includes the following extension:
 Additional extensions will be added at a later date.
 
 .. note:: 
-   Software developers interested in contributing to WNTR extensions should communicate with the core development team
+   Software developers interested in WNTR extensions should communicate with the core development team
    through https://github.com/USEPA/WNTR/issues prior to submitting a pull request.
    See :ref:`developer_instructions` section for more information on contributing to WNTR.
    
@@ -31,8 +31,8 @@ Additional extensions will be added at a later date.
    
    * All files associated with the extension, with the exception of documentation and testing, reside in a folder called ``wntr\extensions\<extension_name>``.
    * Documentation resides in a file called ``documentation\extensions\<extension_name>.rst``. 
-     A link to the documentation should be added to ``documentation\extensions.rst`` and ``documentation\userguide.rst``
-   * Tests reside in file called ``wntr\tests\test_extensions_<extension_name>.py``. 
+     A link to the documentation should be added to ``documentation\extensions.rst`` and ``documentation\userguide.rst``.
+   * Tests reside in a file called ``wntr\tests\test_extensions_<extension_name>.py``. 
      Tests should be marked ``@pytest.mark.extensions``.
 
 Third-party packages
