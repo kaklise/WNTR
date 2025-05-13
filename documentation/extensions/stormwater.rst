@@ -9,7 +9,7 @@
     :hide:
     
     >>> import matplotlib.pylab as plt
-    >>> import wntr.stormwater as swntr
+    >>> import wntr.extensions.stormwater as swntr
     >>> try:
     ...    swn = swntr.network.StormWaterNetworkModel('../examples/networks/Site_Drainage_Model.inp')
     ... except:
@@ -64,7 +64,7 @@ In the examples below, the stormwater subpackage is imported as "swntr".
 
 .. doctest::
 
-    >>> import wntr.stormwater as swntr
+    >>> import wntr.extensions.stormwater as swntr
 
 S-WNTR includes the following modules:
 
