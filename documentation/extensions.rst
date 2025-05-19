@@ -2,7 +2,7 @@
 
     \clearpage
 	
-.. _examples:
+.. _extensions:
 
 Extensions
 ==========
@@ -21,23 +21,14 @@ WNTR currently includes the following extension:
 Additional extensions will be added at a later date.
 
 .. note:: 
-   Developers interested in WNTR extensions should communicate with the core development team
+   Developers interested in contibuting to WNTR extensions should communicate with the core development team
    through https://github.com/USEPA/WNTR/issues prior to submitting a pull request.
-   See :ref:`developer_instructions` section for more information on contributing to WNTR.
+   See :ref:`contributing` for more information.
    
    While documentation is required for extensions, the documentation is not included in the 
    `WNTR EPA Report <https://cfpub.epa.gov/si/si_public_record_report.cfm?Lab=NHSRC&dirEntryID=337793>`_.  
    Documentation for extensions is only available online. 
-   Testing is run through the `extensions workflow <https://github.com/kaklise/WNTR/blob/swntr/.github/workflows/extensions.yml>`_.
    Extensions that have long term test failures will be removed from the repository.
-   
-   Extensions use the following structure:
-   
-   * Files associated with the extension, with the exception of documentation and testing, reside in a folder named ``wntr\extensions\<extension_name>``.
-   * Documentation resides in a file named ``documentation\extensions\<extension_name>.rst``. 
-     A link to the documentation should be added to ``documentation\extensions.rst`` and ``documentation\userguide.rst``.
-   * Tests reside in a file named ``wntr\tests\test_extensions_<extension_name>.py``. 
-     Tests should be marked ``@pytest.mark.extensions``.
 
 Third-party packages
 ---------------------
