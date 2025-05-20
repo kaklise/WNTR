@@ -14,7 +14,9 @@ openpyxl
 geopandas
 rasterio
 rtree
-pyswmm
+
+# Extensions
+epaswmm
 swmmio
 
 # Documentation

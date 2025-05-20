@@ -3,22 +3,15 @@ The wntr.stormwater.sim module includes methods to simulate
 hydraulics.
 """
 import os
-import subprocess
 
 try:
-    import pyswmm
-    import swmmio
-    has_swmmio = True
+    import epaswmm.solver
+    has_swmm = True
 except ModuleNotFoundError:
-    pyswmm = None
-    swmmio = None
-    has_swmmio = False
+    has_swmm = False
 
+from wntr.sim import SimulationResults
 from wntr.extensions.stormwater.io import write_inpfile, read_outfile, read_rptfile
-
-os.environ["CONDA_DLL_SEARCH_MODIFICATION_ENABLE"] = "1"
-# See https://github.com/OpenWaterAnalytics/pyswmm/issues/298
-
 
 class SWMMSimulator(object):
     """
@@ -44,8 +37,8 @@ class SWMMSimulator(object):
         -------
         Simulation results from the binary .out file (default) or summary .rpt file
         """
-        if not has_swmmio:
-            raise ModuleNotFoundError('swmmio is required')
+        if not has_swmm:
+            raise ModuleNotFoundError('epaswmm is required')
 
         temp_inpfile = file_prefix + '.inp'
         if os.path.isfile(temp_inpfile):
@@ -61,20 +54,14 @@ class SWMMSimulator(object):
 
         write_inpfile(self._swn, temp_inpfile)
 
-        with pyswmm.Simulation(temp_inpfile) as sim: 
-             for step in sim:
-                 pass
-             sim.report()
-        
-        # The simulation can also be run with swmmio
-        #p = subprocess.run("python -m swmmio --run " + temp_inpfile)
+        swmm_solver = epaswmm.solver.Solver(inp_file=temp_inpfile)
+        swmm_solver.execute()
         
         if full_results:
             results = read_outfile(temp_outfile)
-            report_summary = read_rptfile(temp_rptfile)
-            results.report = report_summary
         else:
             results = SimulationResults()
-            results.report = report_summary
-
+        
+        results.report = read_rptfile(temp_rptfile)
+        
         return results
