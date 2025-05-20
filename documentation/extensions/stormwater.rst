@@ -563,21 +563,27 @@ where the impact of individual component failures is evaluated.
 	
 	.. doctest::
 		
-		>>> import pandas as pd
-		
-		>>> inp_file = 'networks/Site_Drainage_Model.inp'
-		>>> swn = swntr.network.StormWaterNetworkModel(inp_file) # doctest: +SKIP
+		>>> import pandas as pd # used to plot results
 
 		>>> flow_velocity = {}
 		>>> for name in swn.conduit_name_list:
-		...     swn = swntr.network.StormWaterNetworkModel(inp_file) # doctest: +SKIP
+		...     # Restrict flow
 		...     swn.conduits.loc[name, "MaxFlow"] = 0.00001
+		...     # Run simulation and save results
 		...     sim = swntr.sim.SWMMSimulator(swn)
 		...     results = sim.run_sim(name)
 		...     flow_velocity[name] = results.link['FLOW_VELOCITY'].mean(axis=1)
+		...     # Reset max flow (0 = unconstrained)
+		...     swn.conduits.loc[name, "MaxFlow"] = 0
 		
 		>>> pd.DataFrame(flow_velocity).plot()
-		
+
+	.. doctest::
+	    :hide:
+
+	    >>> plt.tight_layout()
+	    >>> plt.savefig('stormwater_criticality.png', dpi=300)
+	
 	.. _fig-stormwater-criticality:
 	.. figure:: figures/stormwater_criticality.png
 	   :width: 640
