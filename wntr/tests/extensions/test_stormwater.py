@@ -364,7 +364,7 @@ class TestStormWaterMetrics(unittest.TestCase):
         
         pump_name = swn.pump_name_list[0]
         from_metrics = pump_energy[pump_name].sum()
-        from_rpt = results.report['Pumping Summary'].loc[pump_name,'PowerUsage(kW-hr)']
+        from_rpt = results.report['PUMPING_SUMMARY'].loc[pump_name,'PowerUsage(kW-hr)']
         
         self.assertAlmostEqual(from_metrics, from_rpt, 1)
     
