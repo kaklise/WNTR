@@ -8,30 +8,24 @@ import numpy as np
 import networkx as nx
 import pandas as pd
 import matplotlib.pylab as plt
-import subprocess
 
 try:
+    import epaswmm.solver
     import swmmio
     warnings.filterwarnings('ignore', module='swmmio')
-    has_swmmio = True
+    has_swmm = True
 except ModuleNotFoundError:
-    swmmio = None
-    has_swmmio = False
-try:
-    import pyswmm
-except ModuleNotFoundError:
-    pyswmm = None
+    has_swmm = False
 
 import wntr.extensions.stormwater as swntr
-
 
 testdir = dirname(abspath(str(__file__)))
 test_datadir = join(testdir, "networks_for_testing")
 ex_datadir = join(testdir, "..", "..", "examples", "networks")
 
 
-@unittest.skipIf(not has_swmmio,
-                 "Cannot test SWNTR capabilities: swmmio is missing")
+@unittest.skipIf(not has_swmm,
+                 "Cannot test stormwater capabilities: requirements are missing")
 @pytest.mark.extensions
 class TestStormWaterModel(unittest.TestCase):
 
@@ -139,8 +133,8 @@ class TestStormWaterModel(unittest.TestCase):
                                composite.loc['KRO3001', 'AverageValue'], 4)
         
 
-@unittest.skipIf(not has_swmmio,
-                 "Cannot test SWNTR capabilities: swmmio is missing")
+@unittest.skipIf(not has_swmm,
+                 "Cannot test stormwater capabilities: requirements are missing")
 @pytest.mark.extensions
 class TestStormWaterSim(unittest.TestCase):
 
@@ -160,23 +154,21 @@ class TestStormWaterSim(unittest.TestCase):
 
     def test_simulation(self):
         # Run swmm using
-        # 1. direct use of pyswmm, stepwise simulation
-        # 2. direct use of swmmio cmd
-        # 3. swmmio cmd with INP file read/write
-        # 4. swntr with INP file read/write
+        # 1. direct use of swmm
+        # 2. swntr (which calls swmm) with INP file read/write
         inpfiles = [
                     # SWMMIO INP test files
                     swmmio.tests.data.MODEL_FULL_FEATURES_PATH, 
-                    #swmmio.tests.data.MODEL_CURVE_NUMBER, # pyswmm fails
-                    #swmmio.tests.data.MODEL_MOD_HORTON, # pyswmm fails
+                    swmmio.tests.data.MODEL_CURVE_NUMBER,
+                    swmmio.tests.data.MODEL_MOD_HORTON,
                     swmmio.tests.data.MODEL_GREEN_AMPT,
                     
                     # SWMM INP example files
-                    #'Culvert.inp', # pyswmm fails
+                    #'Culvert.inp', # fails
                     'Detention_Pond_Model.inp',
-                    #'Groundwater_Model.inp', # pyswmm fails (rpt file does not finish writing).  swmmio results in empty link results
+                    'Groundwater_Model.inp',
                     'Inlet_Drains_Model.inp',
-                    #'LID_Model.inp', # pyswmm fails (rpt file does not finish writing).  swmmio results in empty link results
+                    'LID_Model.inp',
                     'Pump_Control_Model.inp',
                     'Site_Drainage_Model.inp', 
                     ]
@@ -194,32 +186,16 @@ class TestStormWaterSim(unittest.TestCase):
 
             temp_inpfile = 'temp.inp'
             temp_outfile = 'temp.out'
-
-            # Direct use of INP file with pyswmm
-            print("   run pyswmm")
+            
+            # Direct use of INP file with swmm
+            print("   run swmm")
             if isfile(outfile):
                 os.remove(outfile)
-            with pyswmm.Simulation(inpfile) as sim: 
-                for step in sim:
-                    pass
-                sim.report()
-
-            results_pyswmm = swntr.io.read_outfile(outfile)
+            swmm_solver = epaswmm.solver.Solver(inp_file=inpfile)
+            swmm_solver.execute()
+            results_swmm = swntr.io.read_outfile(outfile)
             
-            # swmmio with saved INP file
-            # No model sections are flagged for rewrite
-            # print("   run swmmio")
-            # if isfile(temp_inpfile):
-            #     os.remove(temp_inpfile)
-            # if isfile(temp_outfile):
-            #     os.remove(temp_outfile)
-            # swmmio_model = swmmio.Model(inpfile)
-            # swmmio_model.inp.save(temp_inpfile)
-            # p = subprocess.run("python -m swmmio --run " + temp_inpfile)
-            # results_swmmio = swntr.io.read_outfile(temp_outfile)
-            
-            # swntr
-            # All model sections are flagged for rewrite
+            # swntr, model sections are flagged for rewrite
             print("   run swntr")
             if isfile(temp_inpfile):
                 os.remove(temp_inpfile)
@@ -238,15 +214,11 @@ class TestStormWaterSim(unittest.TestCase):
                 self.tested_rpt_sections.add(sec)
             
             # Compare direct methods to swmmio and swntr, node total inflow
-            #assert_frame_equal(results_pyswmm.node['TOTAL_INFLOW'],
-            #                   results_swmmio.node['TOTAL_INFLOW'])
-            assert_frame_equal(results_pyswmm.node['TOTAL_INFLOW'],
+            assert_frame_equal(results_swmm.node['TOTAL_INFLOW'],
                                results_swntr.node['TOTAL_INFLOW'])
             
             # Compare direct methods to swmmio and swntr, link capacity
-            #assert_frame_equal(results_pyswmm.link['CAPACITY'],
-            #                   results_swmmio.link['CAPACITY'])
-            assert_frame_equal(results_pyswmm.link['CAPACITY'],
+            assert_frame_equal(results_swmm.link['CAPACITY'],
                                results_swntr.link['CAPACITY'])
 
     def test_report_summary(self):
@@ -255,13 +227,13 @@ class TestStormWaterSim(unittest.TestCase):
         sim = swntr.sim.SWMMSimulator(swn) 
         results = sim.run_sim()
         report = results.report
-        assert 'Node Depth Summary' in report.keys()
-        assert 'MaxNodeDepth' in report['Node Depth Summary'].columns
-        assert set(report['Node Depth Summary'].index) == set(swn.node_name_list)
+        assert 'NODE_DEPTH_SUMMARY' in report.keys()
+        assert 'MaxNodeDepth' in report['NODE_DEPTH_SUMMARY'].columns
+        assert set(report['NODE_DEPTH_SUMMARY'].index) == set(swn.node_name_list)
 
 
-@unittest.skipIf(not has_swmmio,
-                 "Cannot test SWNTR capabilities: swmmio is missing")
+@unittest.skipIf(not has_swmm,
+                 "Cannot test stormwater capabilities: requirements are missing")
 @pytest.mark.extensions
 class TestStormWaterScenarios(unittest.TestCase):
 
@@ -321,8 +293,8 @@ class TestStormWaterScenarios(unittest.TestCase):
         self.assertAlmostEqual(flow_rate_outage.mean(), 0, 4)
 
 
-@unittest.skipIf(not has_swmmio,
-                 "Cannot test SWNTR capabilities: swmmio is missing")
+@unittest.skipIf(not has_swmm,
+                 "Cannot test stormwater capabilities: requirements are missing")
 @pytest.mark.extensions
 class TestStormWaterMetrics(unittest.TestCase):
 
@@ -496,8 +468,8 @@ class TestStormWaterMetrics(unittest.TestCase):
         self.assertAlmostEqual(total_time_to_capacity, 7675.9, 1)
 
     
-@unittest.skipIf(not has_swmmio,
-                 "Cannot test SWNTR capabilities: swmmio is missing")
+@unittest.skipIf(not has_swmm,
+                 "Cannot test stormwater capabilities: requirements are missing")
 @pytest.mark.extensions
 class TestStormWaterGIS(unittest.TestCase):
     
@@ -540,8 +512,8 @@ class TestStormWaterGIS(unittest.TestCase):
             self.assertTrue(isfile(filename))
 
 
-@unittest.skipIf(not has_swmmio,
-                 "Cannot test SWNTR capabilities: swmmio is missing")
+@unittest.skipIf(not has_swmm,
+                 "Cannot test stormwater capabilities: requirements are missing")
 @pytest.mark.extensions
 class TestStormWaterGraphics(unittest.TestCase):
     
