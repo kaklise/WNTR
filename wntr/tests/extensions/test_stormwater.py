@@ -20,8 +20,8 @@ except ModuleNotFoundError:
 import wntr.extensions.stormwater as swntr
 
 testdir = dirname(abspath(str(__file__)))
-test_datadir = join(testdir, "networks_for_testing")
-ex_datadir = join(testdir, "..", "..", "examples", "networks")
+test_datadir = join(testdir, "..", "networks_for_testing")
+ex_datadir = join(testdir, "..", "..", "..", "examples", "networks")
 
 
 @unittest.skipIf(not has_swmm,
