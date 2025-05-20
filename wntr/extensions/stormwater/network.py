@@ -8,14 +8,16 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import warnings
+import shutil
 import os
 
 try:
     import swmmio
-    has_swmmio = True
+    from swmmio.defs import INP_OBJECTS
+    from swmmio.utils.text import get_inp_sections_details
+    has_swmm = True
 except ModuleNotFoundError:
-    swmmio = None
-    has_swmmio = False
+    has_swmm = False
 
 from wntr.extensions.stormwater.io import to_graph, to_gis
 
@@ -39,13 +41,9 @@ class StormWaterNetworkModel(object):
 
     def __init__(self, inp_file_name):
         
-        if not has_swmmio:
+        if not has_swmm:
             raise ModuleNotFoundError('swmmio is required')
-        
-        from swmmio.defs import INP_OBJECTS
-        from swmmio.utils.text import get_inp_sections_details
-        import shutil
-        
+
         headers = get_inp_sections_details(inp_file_name, include_brackets=False)
         missing_headers = set(INP_OBJECTS.keys()) - set(headers.keys())
         appended_text = ""
