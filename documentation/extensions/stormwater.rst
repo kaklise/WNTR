@@ -19,9 +19,9 @@
     ... except:
     ...    swnP = swntr.network.StormWaterNetworkModel('../examples/networks/Pump_Control_Model.inp')
     >>> try:
-    ...    backdrop_img = plt.imread('../../extensions/figures/Site-Post.jpg')
+    ...    backdrop_img = plt.imread('../../extensions/figures/stormwater_Site-Post.jpg')
     ... except:
-    ...    backdrop_img = plt.imread('../documentation/extensions/figures/Site-Post.jpg')
+    ...    backdrop_img = plt.imread('../documentation/extensions/figures/stormwater_Site-Post.jpg')
 
 .. _stormwater:
 
@@ -141,10 +141,10 @@ The model is stored in a
     >>> f = ax.set_ylim(0, 1475)
     >>> f = swntr.graphics.plot_network(swn, link_labels=True, ax=ax)
     >>> plt.tight_layout()
-    >>> plt.savefig('plot_Site_Drainage_Model.png', dpi=300)
+    >>> plt.savefig('stormwater_Site_Drainage_Model.png', dpi=300)
 	
 .. _fig-swmm-network:
-.. figure:: figures/plot_Site_Drainage_Model.png
+.. figure:: figures/stormwater_Site_Drainage_Model.png
    :width: 640
    :alt: Network
    
@@ -485,10 +485,10 @@ where the impact of individual component failures is evaluated.
           :hide:
           
           >>> plt.tight_layout()
-          >>> plt.savefig('timeseries_plot.png', dpi=300)
+          >>> plt.savefig('stormwater_timeseries.png', dpi=300)
       
       .. _fig-stormwater-timeseries:
-      .. figure:: figures/timeseries_plot.png
+      .. figure:: figures/stormwater_timeseries.png
           :width: 640
           :alt: Timeseries plot
           
@@ -557,7 +557,34 @@ where the impact of individual component failures is evaluated.
 
 	* Conduit criticality
 	* Pump criticality
+	
+	The following example runs criticality analysis on conduits (limiting flow to 0.0001) 
+	and plots a timeseries of average flow velocity for each scenario.
+	
+	.. doctest::
+		
+		>>> import pandas as pd
+		
+		>>> inp_file = 'networks/Site_Drainage_Model.inp'
+		>>> swn = swntr.network.StormWaterNetworkModel(inp_file) # doctest: +SKIP
 
+		>>> flow_velocity = {}
+		>>> for name in swn.conduit_name_list:
+		...     swn = swntr.network.StormWaterNetworkModel(inp_file) # doctest: +SKIP
+		...     swn.conduits.loc[name, "MaxFlow"] = 0.00001
+		...     sim = swntr.sim.SWMMSimulator(swn)
+		...     results = sim.run_sim(name)
+		...     flow_velocity[name] = results.link['FLOW_VELOCITY'].mean(axis=1)
+		
+		>>> pd.DataFrame(flow_velocity).plot()
+		
+	.. _fig-stormwater-criticality:
+	.. figure:: figures/stormwater_criticality.png
+	   :width: 640
+	   :alt: Conduit criticality
+
+	   Example conduit criticality analysis.
+	   
 	See WNTR documentation on :ref:`criticality` for more information.
 
 Resilience metrics
@@ -710,10 +737,10 @@ The following example creates a network plot with invert elevation.
     :hide:
 
     >>> plt.tight_layout()
-    >>> plt.savefig('plot_basic_stormwater_network.png', dpi=300)
+    >>> plt.savefig('stormwater_network_elevation.png', dpi=300)
     
 .. _fig-stormwater-network:
-.. figure:: figures/plot_basic_stormwater_network.png
+.. figure:: figures/stormwater_network_elevation.png
    :width: 640
    :alt: Network
    
