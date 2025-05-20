@@ -30,7 +30,6 @@ Key Features in WNTR
    :hidden:
 
    userguide
-   installation
    wntr-api
    users
 
