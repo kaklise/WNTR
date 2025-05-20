@@ -107,7 +107,7 @@ Pull requests must meet the following minimum requirements to be included in WNT
 Extensions
 ^^^^^^^^^^
 WNTR extensions are intended to house beta and self-contained functionality that adds to WNTR. 
-Developers interested in contibuting to WNTR extensions should communicate with the core development team
+Developers interested in contributing to WNTR extensions should communicate with the core development team
 through https://github.com/USEPA/WNTR/issues prior to submitting a pull request. 
 See :ref:`extensions` for a list of current WNTR extensions.
 

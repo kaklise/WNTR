@@ -53,7 +53,7 @@ experience using Python, including the installation of additional Python package
    In addition to resilience analysis for drinking water systems, WNTR now includes 
    functionality to simulate and analyze resilience of stormwater and wastewater systems.
    This builds on **EPA's Storm Water Management Model (SWMM)** :cite:p:`ross22`.
-   See :ref:`stormwater` for more information.
+   See the :ref:`stormwater` extension for more information.
 	
 WNTR can be installed through the United States Environmental Protection Agency (US EPA) 
 GitHub organization at https://github.com/USEPA/WNTR.  An integrated development environment 

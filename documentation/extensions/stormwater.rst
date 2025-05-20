@@ -331,7 +331,7 @@ Pandas DataFrames, as described in the following section.
 	* Rainfall
 	* Snow depth
 	* Evaporation loss
-	* Infilltration loss
+	* Infiltration loss
 	* Runoff rate
 	* Groundwater outflow rate
 	* Groundwater table elevation
@@ -348,8 +348,8 @@ Pandas DataFrames, as described in the following section.
 	* Air temperature
 	* Rainfall
 	* Snow depth
-	* Evaporative infilltration loss
-	* Runnoff flow
+	* Evaporative infiltration loss
+	* Runoff flow
 	* Dry weather inflow
 	* Groundwater inflow
 	* Rain derived infiltration and inflow (RDII) inflow

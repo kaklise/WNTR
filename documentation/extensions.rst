@@ -21,7 +21,7 @@ WNTR currently includes the following extension:
 Additional extensions will be added at a later date.
 
 .. note:: 
-   Developers interested in contibuting to WNTR extensions should communicate with the core development team
+   Developers interested in contributing to WNTR extensions should communicate with the core development team
    through https://github.com/USEPA/WNTR/issues prior to submitting a pull request.
    See :ref:`contributing` for more information.
    

@@ -251,8 +251,6 @@ To test WNTR, developers can run software tests locally using the following comm
 
 .. _requirements:
 
-.. _requirements:
-
 Requirements
 -------------
 
