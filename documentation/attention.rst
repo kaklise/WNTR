@@ -5,4 +5,4 @@
 
 .. attention:: 
     WNTR now includes capabilities to model stormwater and wastewater systems. 
-    See :ref:`stormwater` for more information.
+    See the :ref:`stormwater` extension for more information.

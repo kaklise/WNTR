@@ -35,15 +35,15 @@ Stormwater/wastewater analysis
 Overview 
 --------
 
-The following section describes capabilities in WNTR to 
+The following section describes a WNTR extension that helps
 quantify the resilience of stormwater and wastewater systems.  
-This capability resides in the :class:`~wntr.stormwater` subpackage of WNTR and 
+This capability resides in the :class:`~wntr.extensions.stormwater` subpackage of WNTR and 
 is referred to as S-WNTR (pronounced "S-winter").
 **S-WNTR is intended to 
 leverage existing stormwater and wastewater software within a framework that 
 facilitates the use of WNTR capabilities for resilience analysis.**
 For that reason, some familiarity with WNTR is recommended before using S-WNTR.
-Drinking water functionality in WNTR is cross referenced in 
+Core functionality in WNTR is cross referenced in 
 the documentation below to provide additional background.
 
 S-WNTR uses the following software packages to run `EPA's 
@@ -71,13 +71,13 @@ S-WNTR includes the following modules:
    =================================================  =============================================================================================================================================================================================================================================================================
    Module                                             Description
    =================================================  =============================================================================================================================================================================================================================================================================
-   :class:`~wntr.stormwater.gis`	                  Contains methods to integrate geospatial data into the model and analysis.
-   :class:`~wntr.stormwater.graphics`                 Contains methods to generate network and fragility curve graphics.
-   :class:`~wntr.stormwater.io`	                      Contains methods to read and write stormwater network models and translate models to other formats.
-   :class:`~wntr.stormwater.metrics`	              Contains methods to compute resilience, including topographic and hydraulic metrics.
-   :class:`~wntr.stormwater.network`	              Contains methods to define stormwater network models.
-   :class:`~wntr.stormwater.scenario`                 Contains methods to define fragility/survival curves.
-   :class:`~wntr.stormwater.sim`		              Contains methods to simulate hydraulics.
+   :class:`~wntr.extensions.stormwater.gis`	          Contains methods to integrate geospatial data into the model and analysis.
+   :class:`~wntr.extensions.stormwater.graphics`      Contains methods to generate network and fragility curve graphics.
+   :class:`~wntr.extensions.stormwater.io`	          Contains methods to read and write stormwater network models and translate models to other formats.
+   :class:`~wntr.extensions.stormwater.metrics`	      Contains methods to compute resilience, including topographic and hydraulic metrics.
+   :class:`~wntr.extensions.stormwater.network`	      Contains methods to define stormwater network models.
+   :class:`~wntr.extensions.stormwater.scenario`      Contains methods to define fragility/survival curves.
+   :class:`~wntr.extensions.stormwater.sim`		      Contains methods to simulate hydraulics.
    =================================================  =============================================================================================================================================================================================================================================================================
 
 Installation
@@ -85,7 +85,7 @@ Installation
 
 Follow WNTR's :ref:`installation` instructions to install S-WNTR.  
 
-S-WNTR requires the following dependencies (included in the `requirements file <https://github.com/kaklise/WNTR/blob/swmm/requirements.txt>`_):
+S-WNTR requires the following dependencies (included in the `requirements file <https://github.com/usepa/WNTR/blob/main/requirements.txt>`_):
 
 * numpy
 * scipy
@@ -94,7 +94,7 @@ S-WNTR requires the following dependencies (included in the `requirements file <
 * matplotlib
 * setuptools
 * geopandas
-* swmm
+* epaswmm
 * swmmio
 
 Units
@@ -120,7 +120,7 @@ Stormwater network model
 
 A stormwater network model can be created directly from SWMM INP files. 
 The model is stored in a
-:class:`~wntr.stormwater.network.StormWaterNetworkModel` object.  
+:class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel` object.  
 
 .. doctest::
 	
@@ -208,7 +208,7 @@ The model is stored in a
 	* ``swn.conduit_volume``
 	
 	.. note:: 
-	   :class:`~wntr.stormwater.network.StormWaterNetworkModel` uses ``swmmio.Model`` to 
+	   :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel` uses ``swmmio.Model`` to 
 	   read and write the SWMM INP file. 
 	   swimmio stores this information in Pandas and GeoPandas data formats.
 
@@ -218,24 +218,24 @@ The model is stored in a
 	In addition to modifying StormWaterNetworkModel DataFrames directly, the following class
 	methods are also available to help modify models.
 
-	* :class:`~wntr.stormwater.network.StormWaterNetworkModel.add_composite_patterns`: 
+	* :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel.add_composite_patterns`: 
 	  Combine multiple dry weather flows into a single composite base value and pattern 
 	  and update the model (updates ``swn.dwf`` and ``swn.patterns``)
-	* :class:`~wntr.stormwater.network.StormWaterNetworkModel.add_pump_outage_control`: 
+	* :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel.add_pump_outage_control`: 
 	  Add a pump outage control to the model (updates ``swn.controls``)
-	* :class:`~wntr.stormwater.network.StormWaterNetworkModel.add_datetime_indexed_timeseries`: 
+	* :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel.add_datetime_indexed_timeseries`: 
 	  Add timeseries to the model from a datetime indexed DataFrame (updates ``swn.timeseries``)
-	* :class:`~wntr.stormwater.network.StormWaterNetworkModel.add_datetime_indexed_patterns`: 
+	* :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel.add_datetime_indexed_patterns`: 
 	  Add patterns to the model from a datetime indexed DataFrame (updates ``swn.patterns``)
-	* :class:`~wntr.stormwater.network.StormWaterNetworkModel.anonymize_coordinates`: 
+	* :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel.anonymize_coordinates`: 
 	  Anonymize model coordinates (using a spring layout) and remove vertices and polygons 
 	  to anonymize the model (updates ``swn.coordinates``, ``swn.vertices``, and ``swn.polygons``)
 	
 	The following class methods convert timeseries and patterns to datetime index DataFrames.
 	
-	* :class:`~wntr.stormwater.network.StormWaterNetworkModel.timeseries_to_datetime_format`:
+	* :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel.timeseries_to_datetime_format`:
 	  Convert SWMM formatted timeseries DataFrame to a datetime indexed DataFrame
-	* :class:`~wntr.stormwater.network.StormWaterNetworkModel.patterns_to_datetime_format`:
+	* :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel.patterns_to_datetime_format`:
 	  Convert SWMM formatted patterns DataFrame to a datetime indexed DataFrame
 
 .. dropdown:: **Model I/O**
@@ -243,17 +243,17 @@ The model is stored in a
 	S-WNTR includes the following functions to read/write files and transform 
 	the StormWaterNetworkModel to other data formats.
 
-	* :class:`~wntr.stormwater.io.read_inpfile`: Create a StormWaterNetworkModel object from a SWMM INP file 
-	* :class:`~wntr.stormwater.io.write_inpfile`: Write a SWMM INP file from a StormWaterNetworkModel
-	* :class:`~wntr.stormwater.io.to_graph`: Convert a StormWaterNetworkModel object into a NetworkX graph object
-	* :class:`~wntr.stormwater.io.to_gis`: Convert a StormWaterNetworkModel object into a WaterNetworkGIS object
-	* :class:`~wntr.stormwater.io.write_geojson`: Write GeoJSON files from a StormWaterNetworkModel
+	* :class:`~wntr.extensions.stormwater.io.read_inpfile`: Create a StormWaterNetworkModel object from a SWMM INP file 
+	* :class:`~wntr.extensions.stormwater.io.write_inpfile`: Write a SWMM INP file from a StormWaterNetworkModel
+	* :class:`~wntr.extensions.stormwater.io.to_graph`: Convert a StormWaterNetworkModel object into a NetworkX graph object
+	* :class:`~wntr.extensions.stormwater.io.to_gis`: Convert a StormWaterNetworkModel object into a WaterNetworkGIS object
+	* :class:`~wntr.extensions.stormwater.io.write_geojson`: Write GeoJSON files from a StormWaterNetworkModel
 
 	Additional methods are available for reading hydraulic simulation results files.  
 	See :ref:`stormwater_simulation` for more information.
 
-	* :class:`~wntr.stormwater.io.read_outfile`: Read the SWMM binary output file into Pandas DataFrames
-	* :class:`~wntr.stormwater.io.read_rptfile`: Read the SWMM summary report file into Pandas DataFrames
+	* :class:`~wntr.extensions.extensions.stormwater.io.read_outfile`: Read the SWMM binary output file into Pandas DataFrames
+	* :class:`~wntr.extensions.stormwater.io.read_rptfile`: Read the SWMM summary report file into Pandas DataFrames
 
 .. _stormwater_simulation:
 
@@ -261,7 +261,7 @@ Hydraulic simulation
 --------------------
 
 Hydraulic simulations are run using the 
-:class:`~wntr.stormwater.sim.SWMMSimulator` class. Simulation results are stored in a series of 
+:class:`~wntr.extensions.stormwater.sim.SWMMSimulator` class. Simulation results are stored in a series of 
 Pandas DataFrames, as described in the following section.
 
 .. doctest::
@@ -270,7 +270,7 @@ Pandas DataFrames, as described in the following section.
     >>> results = sim.run_sim()
 
 .. note:: 
-   :class:`~wntr.stormwater.sim.SWMMSimulator` uses ``swmm`` to run the full
+   :class:`~wntr.extensions.stormwater.sim.SWMMSimulator` uses ``swmm`` to run the full
    duration of the SWMM simulation. swmm can be used directly for stepwise simulation.
 
 .. dropdown:: **Overland flow**
@@ -288,13 +288,13 @@ Pandas DataFrames, as described in the following section.
 .. dropdown:: **Simulation results**
 	
 	Simulation results are stored in a 
-	:class:`~wntr.stormwater.sim.ResultsObject` organized in **node**, **link**, **subcatchment**, **system**, and **report** sections.
+	:class:`~wntr.extensions.stormwater.sim.ResultsObject` organized in **node**, **link**, **subcatchment**, **system**, and **report** sections.
 	Each section contains a
 	DataFrames storing a timeseries of 
 	simulation results or summary information.
 	See WNTR documentation on :ref:`simulation_results` for more information on the format of simulation results in WNTR.
 
-	The S-WNTR :class:`~wntr.stormwater.sim.ResultsObject` includes the following sections and attributes 
+	The S-WNTR :class:`~wntr.extensions.stormwater.sim.ResultsObject` includes the following sections and attributes 
 	(Note that attribute names use all caps with an underscore between words):
 	
 	**results.node** includes the following timeseries for junctions, outfall, and storage nodes from the OUT file:
@@ -394,9 +394,9 @@ Pandas DataFrames, as described in the following section.
 		>>> conduit_capacity = results.link['CAPACITY'].loc[:, 'C1']
 
 	Simulation timeseries can also be extracted directly from a SWMM binary output file 
-	using the function :class:`~wntr.stormwater.io.read_outfile` and 
+	using the function :class:`~wntr.extensions.stormwater.io.read_outfile` and 
 	a report summary can be extracted directly from a SWMM report file 
-	using the function :class:`~wntr.stormwater.io.read_rptfile`, as shown in the example below.
+	using the function :class:`~wntr.extensions.stormwater.io.read_rptfile`, as shown in the example below.
 	The ``file_prefix`` is used to name the output files.
 	The default file prefix is "temp".
 	
@@ -421,13 +421,13 @@ where the impact of individual component failures is evaluated.
 .. dropdown:: **Modeling damage**
 		
     To model disaster scenarios, attributes and controls in the 
-    :class:`~wntr.stormwater.network.StormWaterNetworkModel` are modified to 
+    :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel` are modified to 
     reflect the damage state. 
     Several damage scenarios can be used to quantify resilience of the 
     stormwater/wastewater systems, this includes:
     
     * **Long term power outages**: Power outages impact pumps and lift stations. 
-      The method :class:`~wntr.stormwater.network.StormWaterNetworkModel.add_pump_outage_control` 
+      The method :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel.add_pump_outage_control` 
       adds a control to the model which turns a pump off and on at user specified start and end times, respectively.
       By default, the control priority is set to 4 (highest) to override other controls.
       
@@ -460,9 +460,9 @@ where the impact of individual component failures is evaluated.
           >>> swn.xsections.loc['C1', "Geom1"] = 0.00125
       
     * **Extreme rainfall events**: Increased runoff impacts combined stormwater/wastewater systems.
-      The methods :class:`~wntr.stormwater.network.StormWaterNetworkModel.timeseries_to_datetime_format` can be used to 
+      The methods :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel.timeseries_to_datetime_format` can be used to 
       convert ``swn.timeseries`` into a datetime Pandas DataFrame.  This format is easy to modify or import from other data sources.
-      The method :class:`~wntr.stormwater.network.StormWaterNetworkModel.add_datetime_indexed_timeseries` can then be used to 
+      The method :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel.add_datetime_indexed_timeseries` can then be used to 
       add timeseries formatted as datetime Pandas DataFrames to the model.  This facilitates greater flexibility in the way timeseries are modified.
       
       The following example creates a new timeseries that is a combination of a 100 and 10 year rainfall event, 
@@ -510,18 +510,18 @@ where the impact of individual component failures is evaluated.
 	* Social vulnerability data
 	* Location of critical facilities and emergency services
 
-	S-WNTR includes a :class:`~wntr.stormwater.gis` module which 
+	S-WNTR includes a :class:`~wntr.extensions.stormwater.gis` module which 
 	facilitates the use of GIS data in geospatial operations, like 
-	:class:`~wntr.stormwater.gis.snap` and :class:`~wntr.stormwater.gis.intersect`.
+	:class:`~wntr.extensions.stormwater.gis.snap` and :class:`~wntr.extensions.stormwater.gis.intersect`.
 
-	The :class:`~wntr.stormwater.network.StormWaterNetworkModel` can be converted into a 
-	:class:`~wntr.stormwater.gis.WaterNetworkGIS` object, as shown below.
+	The :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel` can be converted into a 
+	:class:`~wntr.extensions.stormwater.gis.WaterNetworkGIS` object, as shown below.
 
 	.. doctest::
 		
 		>>> swn_gis = swn.to_gis()
 
-	The user can also write geojson files, using the function :class:`~wntr.stormwater.io.write_geojson`.
+	The user can also write geojson files, using the function :class:`~wntr.extensions.stormwater.io.write_geojson`.
 
 	See WNTR documentation on :ref:`geospatial` for more information.
 
@@ -614,7 +614,7 @@ Additional metrics could also be added at a later date.
 		>>> G = swn.to_graph()
 
 	.. note:: 
-	   The :class:`~wntr.stormwater.network.StormWaterNetworkModel.to_graph` method uses ``swmmio.Model`` to 
+	   The :class:`~wntr.extensions.stormwater.network.StormWaterNetworkModel.to_graph` method uses ``swmmio.Model`` to 
 	   create the NetworkX graph object.  The WNTR methods includes additional options to add node and link weight, and 
 	   modify the direction of links according to the sign of the link weight (generally flow direction).
 
@@ -721,9 +721,9 @@ Graphics
 Network attributes, simulation results, and resilience metrics can be plotted in several 
 ways to better understand system characteristics.  
 
-* Basic network graphics can be generated using the function :class:`~wntr.stormwater.graphics.plot_network`.  
+* Basic network graphics can be generated using the function :class:`~wntr.extensions.stormwater.graphics.plot_network`.  
 * Time series graphics can be generated using options available in Matplotlib and Pandas.
-* Fragility curves can be plotted using the function :class:`~wntr.stormwater.graphics.plot_fragility_curve`.  
+* Fragility curves can be plotted using the function :class:`~wntr.extensions.stormwater.graphics.plot_fragility_curve`.  
 
 See WNTR documentation on :ref:`graphics` for more information on graphics capabilities in WNTR.
 

@@ -12,7 +12,7 @@ Extensions
    :target: https://github.com/kaklise/WNTR/actions/workflows/extensions.yml
    
 WNTR extensions are intended to house beta and self-contained functionality that adds to WNTR, 
-but is not part of core WNTR development.  
+but is currently not part of core WNTR development.  The extensions should be designed for a wide audience.
 
 WNTR currently includes the following extension:
 
