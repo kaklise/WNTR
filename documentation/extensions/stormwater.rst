@@ -11,23 +11,22 @@
     >>> import matplotlib.pylab as plt
     >>> import wntr.extensions.stormwater as swntr
     >>> try:
+    ...    swn = swntr.network.StormWaterNetworkModel('../../examples/networks/Site_Drainage_Model.inp')
+    ... except:
     ...    swn = swntr.network.StormWaterNetworkModel('../examples/networks/Site_Drainage_Model.inp')
-    ... except:
-    ...    swn = swntr.network.StormWaterNetworkModel('examples/networks/Site_Drainage_Model.inp')
     >>> try:
+    ...    swnP = swntr.network.StormWaterNetworkModel('../../examples/networks/Pump_Control_Model.inp')
+    ... except:
     ...    swnP = swntr.network.StormWaterNetworkModel('../examples/networks/Pump_Control_Model.inp')
-    ... except:
-    ...    swnP = swntr.network.StormWaterNetworkModel('examples/networks/Pump_Control_Model.inp')
     >>> try:
-    ...    backdrop_img = plt.imread('../figures/Site-Post.jpg')
+    ...    backdrop_img = plt.imread('../../extensions/figures/Site-Post.jpg')
     ... except:
-    ...    backdrop_img = plt.imread('documentation/figures/Site-Post.jpg')
+    ...    backdrop_img = plt.imread('../documentation/extensions/figures/Site-Post.jpg')
 
 .. _stormwater:
 
 Stormwater/wastewater analysis
 ===========================================
-
 
 .. note:: 
    Stormwater and wastewater resilience analysis capabilities are a 
@@ -47,12 +46,11 @@ For that reason, some familiarity with WNTR is recommended before using S-WNTR.
 Drinking water functionality in WNTR is cross referenced in 
 the documentation below to provide additional background.
 
-S-WNTR uses EPA's `Storm Water Management Model (SWMM) <https://www.epa.gov/water-research/storm-water-management-model-swmm>`_ :cite:p:`ross22`
-through the use of two open-source Python packages managed by the `pyswmm organization <https://www.pyswmm.org>`_.
-This includes: 
+S-WNTR uses the following software packages to run `EPA's 
+Storm Water Management Model (SWMM) <https://www.epa.gov/water-research/storm-water-management-model-swmm>`_ :cite:p:`ross22`:
 
-* **pyswmm** :cite:p:`pyswmm`: used to run SWMM hydraulic simulations, https://github.com/pyswmm/pyswmm
-* **swmmio** :cite:p:`swmmio`: used to access and modify SWMM INP files, https://github.com/pyswmm/swmmio
+* **epaswmm** :cite:p:`ross22`: used to run SWMM hydraulic simulations and read OUT files, https://github.com/USEPA/Stormwater-Management-Model
+* **swmmio** :cite:p:`swmmio`: used to read and write SWMM INP files and read RPT files, https://github.com/pyswmm/swmmio
 
 A subset of WNTR classes/methods/functions that were developed for drinking water 
 resilience analysis are imported into the stormwater subpackage to provide capabilities for 
@@ -96,7 +94,7 @@ S-WNTR requires the following dependencies (included in the `requirements file <
 * matplotlib
 * setuptools
 * geopandas
-* pyswmm
+* swmm
 * swmmio
 
 Units
@@ -127,7 +125,7 @@ The model is stored in a
 .. doctest::
 	
     >>> swn = swntr.network.StormWaterNetworkModel('networks/Site_Drainage_Model.inp') # doctest: +SKIP
-	>>> swnP = swntr.network.StormWaterNetworkModel('networks/Pump_Control_Model.inp') # doctest: +SKIP
+    >>> swnP = swntr.network.StormWaterNetworkModel('networks/Pump_Control_Model.inp') # doctest: +SKIP
 
 .. note::
    The stormwater examples in this documentation all use **Site_Drainage_Model.inp** to build the StormWaterNetworkModel, named ``swn``.  
@@ -272,8 +270,8 @@ Pandas DataFrames, as described in the following section.
     >>> results = sim.run_sim()
 
 .. note:: 
-   :class:`~wntr.stormwater.sim.SWMMSimulator` uses ``swmmio`` and ``pyswmm`` to run the full
-   duration of the SWMM simulation. pyswmm can be used directly for stepwise simulation.
+   :class:`~wntr.stormwater.sim.SWMMSimulator` uses ``swmm`` to run the full
+   duration of the SWMM simulation. swmm can be used directly for stepwise simulation.
 
 .. dropdown:: **Overland flow**
 	
@@ -288,47 +286,86 @@ Pandas DataFrames, as described in the following section.
 	the user should first modify their INP file to include 2D overland conduits.
 
 .. dropdown:: **Simulation results**
-
+	
 	Simulation results are stored in a 
-	:class:`~wntr.stormwater.sim.ResultsObject` organized in **node**, **link**, **subcatchment**, and **report** sections.
+	:class:`~wntr.stormwater.sim.ResultsObject` organized in **node**, **link**, **subcatchment**, **system**, and **report** sections.
 	Each section contains a
 	DataFrames storing a timeseries of 
 	simulation results or summary information.
-	See drinking water documentation on :ref:`simulation_results` for more information on the format of simulation results in WNTR.
+	See WNTR documentation on :ref:`simulation_results` for more information on the format of simulation results in WNTR.
 
-	The S-WNTR :class:`~wntr.stormwater.sim.ResultsObject` includes the following sections:
+	The S-WNTR :class:`~wntr.stormwater.sim.ResultsObject` includes the following sections and attributes 
+	(Note that attribute names use all caps with an underscore between words):
 	
-	**results.node** includes the following timeseries for junctions, outfall, and storage nodes:
+	**results.node** includes the following timeseries for junctions, outfall, and storage nodes from the OUT file:
 
 	* Invert depth
 	* Hydraulic head
-	* Ponded volume
+	* Stored volume
 	* Lateral inflow
 	* Total inflow
 	* Flooding loss
-	* Pollution concentration
-
-	**results.link** results include the following timeseries for conduits, weirs, orifices, and pumps:
+	* Pollutant concentration
+	
+	.. doctest::
+	
+		>>> print(results.node.keys())
+		dict_keys(['INVERT_DEPTH', 'HYDRAULIC_HEAD', 'STORED_VOLUME', 'LATERAL_INFLOW', 'TOTAL_INFLOW', 'FLOODING_LOSSES', 'POLLUTANT_CONCENTRATION'])
+    
+	**results.link** results include the following timeseries for conduits, weirs, orifices, and pumps from the OUT file:
 
 	* Flow rate
 	* Flow depth
 	* Flow velocity
+	* Flow volume
 	* Capacity
-	* Pollution concentration
-
-	**results.subcatchment** results include the following timeseries:
+	* Pollutant concentration
+	   
+	.. doctest::
+	
+		>>> print(results.link.keys())
+		dict_keys(['FLOW_RATE', 'FLOW_DEPTH', 'FLOW_VELOCITY', 'FLOW_VOLUME', 'CAPACITY', 'POLLUTANT_CONCENTRATION'])
+        
+	**results.subcatchment** results include the following timeseries from the OUT file:
 
 	* Rainfall
 	* Snow depth
 	* Evaporation loss
-	* Infill loss
+	* Infilltration loss
 	* Runoff rate
 	* Groundwater outflow rate
 	* Groundwater table elevation
 	* Soil moisture
-	* Pollution concentration
-
-	**results.report** results include the following summary information:
+	* Pollutant concentration
+	
+	.. doctest::
+	
+		>>> print(results.subcatchment.keys())
+		dict_keys(['RAINFALL', 'SNOW_DEPTH', 'EVAPORATION_LOSS', 'INFILTRATION_LOSS', 'RUNOFF_RATE', 'GROUNDWATER_OUTFLOW', 'GROUNDWATER_TABLE_ELEVATION', 'SOIL_MOISTURE', 'POLLUTANT_CONCENTRATION'])
+	
+	**results.system** results include the following timeseries from the OUT file:
+	
+	* Air temperature
+	* Rainfall
+	* Snow depth
+	* Evaporative infilltration loss
+	* Runnoff flow
+	* Dry weather inflow
+	* Groundwater inflow
+	* Rain derived infiltration and inflow (RDII) inflow
+	* Direct inflow
+	* Total lateral inflow
+	* Flood losses
+	* Outfall flows
+	* Volume stored
+	* Evaporation rate 
+    
+	.. doctest::
+	
+		>>> print(results.system.keys())
+		dict_keys(['AIR_TEMP', 'RAINFALL', 'SNOW_DEPTH', 'EVAP_INFIL_LOSS', 'RUNOFF_FLOW', 'DRY_WEATHER_INFLOW', 'GROUNDWATER_INFLOW', 'RDII_INFLOW', 'DIRECT_INFLOW', 'TOTAL_LATERAL_INFLOW', 'FLOOD_LOSSES', 'OUTFALL_FLOWS', 'VOLUME_STORED', 'EVAPORATION_RATE'])
+		
+	**results.report** results include the following information from the RPT file (Note, contents depend on the model):
 	
 	* Node summary
 	* Node depth summary
@@ -336,23 +373,19 @@ Pandas DataFrames, as described in the following section.
 	* Node surcharge summary
 	* Node flooding summary
 	* Storage volume summary
-	
 	* Link summary
 	* Link flow summary
 	* Link pollutant load summary
 	* Conduit surcharge summary
 	* Pumping summary
-	
 	* Subcatchment summary
 	* Subcatchment runoff summary
 	* Subcatchment washoff summary
 
-	The following example lists node attributes (Note that attribute names use all caps with an underscore between words)
-
 	.. doctest::
-		
-		>>> print(results.node.keys())
-		dict_keys(['INVERT_DEPTH', 'HYDRAULIC_HEAD', 'PONDED_VOLUME', 'LATERAL_INFLOW', 'TOTAL_INFLOW', 'FLOODING_LOSSES', 'POLLUT_CONC_0'])
+	
+		>>> print(results.report.keys())
+		dict_keys(['NODE_DEPTH_SUMMARY', 'NODE_INFLOW_SUMMARY', 'STORAGE_VOLUME_SUMMARY', 'LINK_FLOW_SUMMARY', 'PUMPING_SUMMARY'])
 
 	The following example extracts the 'C0' conduit capacity from simulation results.
 
@@ -454,7 +487,7 @@ where the impact of individual component failures is evaluated.
           >>> plt.tight_layout()
           >>> plt.savefig('timeseries_plot.png', dpi=300)
       
-      .. _fig-fragility:
+      .. _fig-stormwater-timeseries:
       .. figure:: figures/timeseries_plot.png
           :width: 640
           :alt: Timeseries plot
@@ -490,7 +523,7 @@ where the impact of individual component failures is evaluated.
 
 	The user can also write geojson files, using the function :class:`~wntr.stormwater.io.write_geojson`.
 
-	See drinking water documentation on :ref:`geospatial` for more information.
+	See WNTR documentation on :ref:`geospatial` for more information.
 
 .. dropdown:: **Fragility curves**
 	
@@ -499,19 +532,19 @@ where the impact of individual component failures is evaluated.
 	probability of conduit collapse as a function of peak ground acceleration from an earthquake, or the 
 	probability of damage to a pump station as a function of flood stage.
 
-	:numref:`fig-fragility2` illustrates the fragility curve as a function of peak ground acceleration.  
+	The figure below illustrates the fragility curve as a function of peak ground acceleration.  
 	For example, if the peak ground acceleration is 0.3 at 
 	a specific pipe, the probability of exceeding a Major damage state is 0.16 and the probability
 	of exceeding the Minor damage state is 0.80.  
 
-	.. _fig-fragility2:
-	.. figure:: figures/fragility_curve.png
+	.. _fig-stormwater-fragility:
+	.. figure:: ../figures/fragility_curve.png
 	   :width: 640
 	   :alt: Fragility curve
 
 	   Example fragility curve.
 	   
-	See drinking water documentation on :ref:`fragility_curves` for more information.
+	See WNTR documentation on :ref:`fragility_curves` for more information.
 
 .. dropdown:: **Criticality analysis**
 	
@@ -525,7 +558,7 @@ where the impact of individual component failures is evaluated.
 	* Conduit criticality
 	* Pump criticality
 
-	See drinking water documentation on :ref:`criticality` for more information.
+	See WNTR documentation on :ref:`criticality` for more information.
 
 Resilience metrics
 ------------------
@@ -539,7 +572,7 @@ Additional metrics could also be added at a later date.
 		
 	Topographic metrics, based on graph theory, can be used to assess the connectivity 
 	of stormwater and wastewater systems. Many metrics can be computed directly using NetworkX.
-	See drinking water documentation on :ref:`topographic_metrics` for more information.
+	See WNTR documentation on :ref:`topographic_metrics` for more information.
 
 	The StormWaterNetworkModel can be converted to a NetworkX graph as shown below:
 
@@ -659,7 +692,7 @@ ways to better understand system characteristics.
 * Time series graphics can be generated using options available in Matplotlib and Pandas.
 * Fragility curves can be plotted using the function :class:`~wntr.stormwater.graphics.plot_fragility_curve`.  
 
-See drinking water documentation on :ref:`graphics` for more information on graphics capabilities in WNTR.
+See WNTR documentation on :ref:`graphics` for more information on graphics capabilities in WNTR.
 
 The following example creates a network plot with invert elevation.
 
@@ -679,7 +712,7 @@ The following example creates a network plot with invert elevation.
     >>> plt.tight_layout()
     >>> plt.savefig('plot_basic_stormwater_network.png', dpi=300)
     
-.. _fig-network-2:
+.. _fig-stormwater-network:
 .. figure:: figures/plot_basic_stormwater_network.png
    :width: 640
    :alt: Network

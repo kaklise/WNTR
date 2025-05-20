@@ -117,7 +117,7 @@ Extensions adhere to the following file structure:
 * Documentation resides in a file named ``documentation\extensions\<extension_name>.rst``. 
   A link to the documentation should be added to ``documentation\extensions.rst`` and ``documentation\userguide.rst``.
 * Testing is run through the `extensions workflow <https://github.com/kaklise/WNTR/blob/swntr/.github/workflows/extensions.yml>`_.
-  Tests reside in a file named ``wntr\tests\test_extensions_<extension_name>.py``. 
+  Tests reside in a file named ``wntr\tests\extensions\test_<extension_name>.py``. 
   Tests should be marked ``@pytest.mark.extensions``.
 
 .. note:: 
