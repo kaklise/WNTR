@@ -10,7 +10,7 @@ Installation
 
 WNTR requires 64-bit Python (tested on versions 3.9, 3.10, 3.11, and 3.12) along with several 
 Python package dependencies. 
-See :ref:`requirements` and :ref:`optional_dependencies` for more information.
+See :ref:`requirements` for more information.
 WNTR can be installed as a Python package as briefly described below. 
 :ref:`detailed_instructions` are included in the following section.
 
@@ -47,6 +47,7 @@ following commands in a terminal, command line, or PowerShell prompt.
 .. |anaconda downloads| image:: https://anaconda.org/conda-forge/wntr/badges/downloads.svg
 .. _anaconda downloads: https://anaconda.org/conda-forge/wntr
 
+	
 .. _detailed_instructions:
 
 Detailed instructions
