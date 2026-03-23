@@ -28,9 +28,12 @@
 Stormwater/wastewater analysis
 ===========================================
 
-.. note:: 
-   Stormwater and wastewater resilience analysis capabilities are a 
-   WNTR extension and should be considered beta software. 
+**Summary**: The stormwater extension combines SWMM with existing capabilities in WNTR to quantify resilience of stormwater and wastewater systems.
+The extension should be considered beta software. 
+
+**Point of contact**: Katherine Klise, https://github.com/kaklise
+
+-----
 
 Overview 
 --------
