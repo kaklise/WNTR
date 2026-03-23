@@ -262,21 +262,6 @@ Since the release depends on external services, the instructions below often nee
 10. **Add an announcement to the homepage**: If this is not a release candidate, update attention.rst with an 
     announcement for the new release (update version number).  This will update https://usepa.github.io/WNTR.
 
-Extensions adhere to the following file structure:
-   
-* Files associated with the extension, with the exception of documentation and testing, reside in a folder named ``wntr\extensions\<extension_name>``.
-* Documentation resides in a file named ``documentation\extensions\<extension_name>.rst``. 
-  A link to the documentation should be added to ``documentation\extensions.rst`` and ``documentation\userguide.rst``.
-* Testing is run through the `extensions workflow <https://github.com/kaklise/WNTR/blob/swntr/.github/workflows/extensions.yml>`_.
-  Tests reside in a file named ``wntr\tests\extensions\test_<extension_name>.py``. 
-  Tests should be marked ``@pytest.mark.extensions``.
-
-.. note:: 
-   While documentation is required for extensions, the documentation is not included in the 
-   `WNTR EPA Report <https://cfpub.epa.gov/si/si_public_record_report.cfm?Lab=NHSRC&dirEntryID=337793>`_.  
-   Documentation for extensions is only available online. 
-   Extensions that have long term test failures will be removed from the repository.
-   
 Development team
 -------------------
 WNTR was developed as part of a collaboration between the United States 
