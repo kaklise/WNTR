@@ -80,6 +80,7 @@ U.S. Department of Energy's National Nuclear Security Administration under contr
 
    extensions
    extensions/hello_world
+   extensions/stormwater
    
 .. toctree::
     :maxdepth: 1

@@ -2,6 +2,10 @@
     Version 1.4.0 is now available.  
     See `release notes <https://usepa.github.io/WNTR/whatsnew.html>`_
     for more information.
+
+.. attention:: 
+    WNTR now includes capabilities to model stormwater and wastewater systems. 
+    See the :ref:`stormwater` extension for more information.
  
 For more information on WNTR, see the EPA report titled `Water Network Tool for Resilience (WNTR) Overview, Requirements, and Tutorials <https://cfpub.epa.gov/si/si_public_record_report.cfm?dirEntryId=367270&Lab=CESER>`_ or download the following factsheets.
 
@@ -9,3 +13,4 @@ For more information on WNTR, see the EPA report titled `Water Network Tool for 
 - :download:`WNTR Model Requirements Factsheet <factsheets/WNTR_Model_Requirements_Factsheet_EPA600S25183.pdf>`
 - :download:`WNTR Tutorials Factsheet <factsheets/WNTR_Tutorials_Factsheet_EPA600S25183.pdf>`
 - :download:`WNTR Case Studies Factsheet <factsheets/WNTR_Case_Studies_Factsheet_EPA600S23240.pdf>`
+

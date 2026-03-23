@@ -17,6 +17,7 @@ but is currently not part of core WNTR development.  The extensions should be de
 WNTR currently includes the following extension:
 
 - :ref:`hello_world`
+- :ref:`stormwater`
 
 Additional extensions will be added at a later date.
 

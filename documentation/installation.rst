@@ -288,9 +288,9 @@ Users should have experience using Python (https://www.python.org/), including t
   https://rtree.readthedocs.io/
 * openpyxl :cite:p:`gacl18`: used to read/write to Microsoft® Excel® spreadsheets,
   https://openpyxl.readthedocs.io
-* Additional optional packages listed in `requirements.txt <https://github.com/USEPA/WNTR/blob/main/requirements.txt>`_ are used to build documentation and run tests.
+* Additional optional packages listed in `requirements.txt <https://github.com/USEPA/WNTR/blob/main/requirements.txt>`_ are used 
+  to run extensions, test, and build documentation.
 
-All of these packages are included in the Anaconda Python distribution.
 Version requirements are included in `requirements.txt <https://github.com/USEPA/WNTR/blob/main/requirements.txt>`_.
  
 To install required and optional dependencies, run::
