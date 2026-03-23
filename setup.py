@@ -77,6 +77,7 @@ EXTRAS = {
     'optional': ['plotly<6.0', 'folium', 'utm', 'openpyxl', 'geopandas', 'rasterio', 'rtree'],
     'doc': ['sphinx', 'sphinx_design', 'sphinx_rtd_theme', 'pydata_sphinx_theme', 'sphinxcontrib-bibtex'],
     'test': ['pytest', 'nbformat', 'nbconvert', 'ipykernel', 'coverage'],
+    'stormwater': ['epaswmm', 'swmmio']
 }
 
 # use README file as the long description

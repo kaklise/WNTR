@@ -27,7 +27,7 @@ jobs:
     - name: Install packages
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[optional,test]
+        pip install -e .[optional,test,stormwater]
     - name: Run tests and coverage (unittests plus doctests)
       run: |
         coverage run --source=wntr --include="*/extensions/*" -m pytest -m extensions --doctest-modules wntr
