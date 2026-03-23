@@ -1,5 +1,5 @@
 """
-The wntr.stormwater package contains stormwater and wastewater 
+The wntr.extensions.stormwater extension contains stormwater and wastewater 
 resilience functionality
 """
 from wntr.extensions.stormwater.gis import *
