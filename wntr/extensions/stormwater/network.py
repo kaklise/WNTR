@@ -144,6 +144,9 @@ class StormWaterNetworkModel(object):
             df = getattr(self._swmmio_model.inp, sec)
             setattr(self, sec, df.copy())
         
+        self.conduits["MaxFlow"] = self.conduits["MaxFlow"].astype('float')
+        self.dwf["AverageValue"] = self.dwf["AverageValue"].astype('float')
+        
         # Reset inp file path and remove temp file
         self._swmmio_model.inp.path = inp_file_name
         os.remove("temp.inp")
@@ -344,8 +347,11 @@ class StormWaterNetworkModel(object):
                 p1 = geom3 # pitch, side 1
                 p2 = geom4 # pitch, side 2
                 
-                area = 0.5*h*(h + (b + np.sqrt((p1**2) - h**2) + np.sqrt((p2**2) - h**2))) 
-
+                if p1 >= h and p2 >= h:
+                    area = 0.5*h*(h + (b + np.sqrt((p1**2) - h**2) + np.sqrt((p2**2) - h**2))) 
+                else:
+                    area = None
+                    
             elif shape == "TRIANGULAR":
                 area = (0.5*geom1*geom2)
 
@@ -479,7 +485,7 @@ class StormWaterNetworkModel(object):
         elif patterns.iloc[0]['Type'] == 'DAILY':
             factors.index = pd.to_timedelta(np.arange(7), unit="D")
         elif (patterns.iloc[0]['Type'] == 'HOURLY') or (patterns.iloc[0]['Type'] == 'WEEKEND'):
-            factors.index = pd.to_timedelta(np.arange(24), unit="H")
+            factors.index = pd.to_timedelta(np.arange(24), unit="h")
 
         return factors
     
@@ -645,7 +651,8 @@ class StormWaterNetworkModel(object):
         cols = ['AverageValue']
         cols.extend(list(factor_cols))
         composite = pd.DataFrame(index=nodes, columns=cols)
-
+        composite['AverageValue'] = composite['AverageValue'].astype(float)
+        
         for name, group in data.groupby('Node'):
             pattern_names = group['Pattern']
             
@@ -669,7 +676,7 @@ class StormWaterNetworkModel(object):
                 composite_factors = composite_factors/composite_base
             composite_factors = np.around(composite_factors, 6)
 
-            composite.loc[name, 'AverageValue'] = composite_base
+            composite.loc[name, 'AverageValue'] = float(composite_base)
             composite.loc[name, factor_cols] = composite_factors
 
         if update_model:
@@ -677,13 +684,13 @@ class StormWaterNetworkModel(object):
             data['TimePatterns'] = data.index + pattern_suffix
             
             # Override DWF with new composite values
-            composite_dwf = data[['AverageValue', 'TimePatterns']]
+            composite_dwf = data[['AverageValue', 'TimePatterns']].copy()
             composite_dwf.loc[:,'Parameter'] = 'FLOW'
             composite_dwf = composite_dwf[['Parameter', 'AverageValue', 'TimePatterns']]
             self.dwf.loc[composite_dwf.index, :] = composite_dwf
             
             # Concat Patterns with new composite values
-            composite_patterns = data[factor_cols]
+            composite_patterns = data[factor_cols].copy()
             composite_patterns.index = data['TimePatterns']
             composite_patterns.loc[:,'Type'] = 'HOURLY'
             concat_patterns = pd.concat([self.patterns, composite_patterns])
