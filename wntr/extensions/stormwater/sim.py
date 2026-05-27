@@ -5,7 +5,7 @@ hydraulics.
 import os
 
 try:
-    import epaswmm.solver
+    from openswmm.engine import Solver, EngineState
     has_swmm = True
 except ModuleNotFoundError:
     has_swmm = False
@@ -38,7 +38,7 @@ class SWMMSimulator(object):
         Simulation results from the binary .out file (default) or summary .rpt file
         """
         if not has_swmm:
-            raise ModuleNotFoundError('epaswmm is required')
+            raise ModuleNotFoundError('openswmm.engine is required')
 
         temp_inpfile = file_prefix + '.inp'
         if os.path.isfile(temp_inpfile):
@@ -53,10 +53,15 @@ class SWMMSimulator(object):
             os.remove(temp_rptfile)
 
         write_inpfile(self._swn, temp_inpfile)
-
-        swmm_solver = epaswmm.solver.Solver(inp_file=temp_inpfile)
-        swmm_solver.execute()
         
+        #swmm_solver = epaswmm.solver.Solver(inp_file=temp_inpfile)
+        #swmm_solver.execute()
+        
+        with Solver(temp_inpfile, temp_rptfile, temp_outfile) as s:
+            while s.state == EngineState.RUNNING:
+                if s.step() != 0:
+                    break    
+
         if full_results:
             results = read_outfile(temp_outfile)
         else:

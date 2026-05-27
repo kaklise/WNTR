@@ -5,9 +5,10 @@ read and write stormwater and wastewater network models.
 import logging
 import pandas as pd
 import networkx as nx
+import numpy as np
 
 try:
-    import epaswmm.output
+    from openswmm.engine import OutputReader, OutNodeVar, OutLinkVar, OutSubcatchVar, OutSystemVar
     import swmmio
     has_swmm = True
 except ModuleNotFoundError:
@@ -161,6 +162,14 @@ def read_rptfile(filename):
         
     report = {}
     
+    # Fix to read version number from an OPENSWMM RPT file
+    with open(filename, 'r') as file:
+        data = file.read()
+    data = data.replace("OPENSWMM ENGINE - VERSION", 
+                        "STORM WATER MANAGEMENT MODEL - VERSION")
+    with open(filename, 'w') as file:
+        file.write(data)       
+            
     rpt_sections = swmmio.utils.text.get_rpt_sections_details(filename)
     
     for section in rpt_sections: 
@@ -189,59 +198,118 @@ def read_outfile(filename):
     
     """
     if not has_swmm:
-        raise ModuleNotFoundError('epaswmm is required')
+        raise ModuleNotFoundError('openswmm.engine is required')
     
     results = SimulationResults()
     
-    # Node results = INVERT_DEPTH, HYDRAULIC_HEAD, PONDED_VOLUME, 
-    # LATERAL_INFLOW, TOTAL_INFLOW, FLOODING_LOSSES, POLLUT_CONC_0
+    # Node results = DEPTH, HEAD, VOLUME, 
+    # LATERAL_INFLOW, TOTAL_INFLOW, OVERFLOW , POLLUT_BASE
     results.node = {}
     
-    # Link results = FLOW_RATE, FLOW_DEPTH, FLOW_VELOCITY, FLOW_VOLUME, 
-    # CAPACITY, POLLUT_CONC_0
+    # Link results = FLOW, DEPTH, VELOCITY, VOLUME, 
+    # CAPACITY, POLLUT_BASE
     results.link = {}
     
-    # Subcatchment results = RAINFALL, SNOW_DEPTH, EVAP_LOSS, INFIL_LOSS, 
-    # RUNOFF_RATE, GW_OUTFLOW_RATE, GW_TABLE_ELEV, SOIL_MOISTURE, 
-    # POLLUT_CONC_0
+    # Subcatchment results = RAINFALL, SNOW_DEPTH, EVAP, INFIL, 
+    # RUNOFF, GW_FLOW, GW_ELEV , SOIL_MOIST, POLLUT_BASE
     results.subcatchment = {}
     
-    # System results = AIR_TEMP, RAINFALL, SNOW_DEPTH, EVAP_INFIL_LOSS, 
-    # RUNOFF_FLOW, DRY_WEATHER_INFLOW, GW_INFLOW, RDII_INFLOW, DIRECT_INFLOW,
-    # TOTAL_LATERAL_INFLOW, FLOOD_LOSSES, OUTFALL_FLOWS, VOLUME_STORED, 
-    # EVAP_RATE
+    # System results = TEMPERATURE, RAINFALL, SNOW_DEPTH, EVAP, INFIL, RUNOFF,
+    # DW_INFLOW, GW_INFLOW, LAT_INFLOW, FLOODING, OUTFLOW, STORAGE, 
+    # EVAP_TOTAL, PET
     results.system = {}
     
-    swmm_output = epaswmm.output.Output(output_file=filename)
-    times = swmm_output.times
-    
-    for attribute in epaswmm.output.NodeAttribute:
-        temp = {}
-        for name in swmm_output.get_element_names(element_type=epaswmm.output.ElementType.NODE):
-            ts = swmm_output.get_node_timeseries(element_index=name, attribute=attribute)
-            temp[name] = ts.values()
-        results.node[attribute.name] = pd.DataFrame(data=temp, index=times)
+    with OutputReader(filename) as out:
         
-    for attribute in epaswmm.output.LinkAttribute:
-        temp = {}
-        for name in swmm_output.get_element_names(element_type=epaswmm.output.ElementType.LINK):
-            ts = swmm_output.get_link_timeseries(element_index=name, attribute=attribute)
-            temp[name] = ts.values()
-        results.link[attribute.name] = pd.DataFrame(data=temp, index=times)
+        T = out.get_period_count()
+        N = out.get_node_count()
+        L = out.get_link_count()
+        S = out.get_subcatch_count()
         
-    for attribute in epaswmm.output.SubcatchAttribute:
-        temp = {}
-        for name in swmm_output.get_element_names(element_type=epaswmm.output.ElementType.SUBCATCHMENT):
-            ts = swmm_output.get_subcatchment_timeseries(element_index=name, attribute=attribute)
-            temp[name] = ts.values()
-        results.subcatchment[attribute.name] = pd.DataFrame(data=temp, index=times)
+        node_name_list = [out.get_node_id(i) for i in range(N)]
+        link_name_list = [out.get_link_id(i) for i in range(L)]
+        subcatchment_name_list = [out.get_subcatch_id(i) for i in range(S)]
+        
+        start_date = out.get_start_date() # start date as a Julian date value
+        report_step = out.get_report_step() # time step in seconds
+        timesteps = [i*report_step for i in range(T)]
+        timesteps = pd.to_datetime(timesteps, unit='s')
+        
+        # Node attributes
+        for attribute in OutNodeVar:
+            temp = np.empty((T, N), dtype=np.float32)
+            for t in range(T):
+                try:
+                    temp[t] = out.get_node_result(t, attribute)
+                except:
+                    pass
+            df = pd.DataFrame(data=temp, columns=node_name_list, index=timesteps)
+            results.node[attribute.name] = df
+        
+        # Link attributes
+        for attribute in OutLinkVar:
+            temp = np.empty((T, L), dtype=np.float32)
+            for t in range(T):
+                try:
+                    temp[t] = out.get_link_result(t, attribute)
+                except:
+                    pass
+            df = pd.DataFrame(data=temp, columns=link_name_list, index=timesteps)
+            results.link[attribute.name] = df
+        
+        # Subcatchment attributes
+        for attribute in OutSubcatchVar:
+            temp = np.empty((T, S), dtype=np.float32)
+            for t in range(T):
+                try:
+                    temp[t] = out.get_subcatch_result(t, attribute)
+                except:
+                    pass
+            df = pd.DataFrame(data=temp, columns=subcatchment_name_list, index=timesteps)
+            results.subcatchment[attribute.name] = df
+        
+        # System attributes
+        for attribute in OutSystemVar:
+            temp = np.empty((T), dtype=np.float32)
+            for t in range(T):
+                try:
+                    temp[t] = out.get_system_result(t, attribute)
+                except:
+                    pass
+            df = pd.Series(data=temp, index=timesteps)
+            results.system[attribute.name] = df
+
+
+    # swmm_output = epaswmm.output.Output(output_file=filename)
+    # times = swmm_output.times
     
-    #temp = {}
-    for attribute in epaswmm.output.SystemAttribute:
-        ts = swmm_output.get_system_timeseries(attribute=attribute)
-        #temp[attribute.name] = ts.values()
-        results.system[attribute.name] = pd.Series(data=ts.values(), index=times)
+    # for attribute in epaswmm.output.NodeAttribute:
+    #     temp = {}
+    #     for name in swmm_output.get_element_names(element_type=epaswmm.output.ElementType.NODE):
+    #         ts = swmm_output.get_node_timeseries(element_index=name, attribute=attribute)
+    #         temp[name] = ts.values()
+    #     results.node[attribute.name] = pd.DataFrame(data=temp, index=times)
+        
+    # for attribute in epaswmm.output.LinkAttribute:
+    #     temp = {}
+    #     for name in swmm_output.get_element_names(element_type=epaswmm.output.ElementType.LINK):
+    #         ts = swmm_output.get_link_timeseries(element_index=name, attribute=attribute)
+    #         temp[name] = ts.values()
+    #     results.link[attribute.name] = pd.DataFrame(data=temp, index=times)
+        
+    # for attribute in epaswmm.output.SubcatchAttribute:
+    #     temp = {}
+    #     for name in swmm_output.get_element_names(element_type=epaswmm.output.ElementType.SUBCATCHMENT):
+    #         ts = swmm_output.get_subcatchment_timeseries(element_index=name, attribute=attribute)
+    #         temp[name] = ts.values()
+    #     results.subcatchment[attribute.name] = pd.DataFrame(data=temp, index=times)
     
+    # #temp = {}
+    # for attribute in epaswmm.output.SystemAttribute:
+    #     ts = swmm_output.get_system_timeseries(attribute=attribute)
+    #     #temp[attribute.name] = ts.values()
+    #     results.system[attribute.name] = pd.Series(data=ts.values(), index=times)
+
     return results
 
 def write_geojson(swn, prefix: str, crs=None):

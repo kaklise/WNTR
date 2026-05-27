@@ -10,7 +10,7 @@ import pandas as pd
 import matplotlib.pylab as plt
 
 try:
-    import epaswmm.solver
+    from openswmm.engine import Solver, EngineState
     import swmmio
     warnings.filterwarnings('ignore', module='swmmio')
     has_swmm = True
@@ -184,21 +184,25 @@ class TestStormWaterSim(unittest.TestCase):
             rootname = inpfile.split('.inp')[0]
             outfile = join(test_datadir, rootname+'.out')
 
-            temp_inpfile = 'temp.inp'
+            temp_rptfile = 'temp.rpt'
             temp_outfile = 'temp.out'
             
             # Direct use of INP file with swmm
-            print("   run swmm")
-            if isfile(outfile):
-                os.remove(outfile)
-            swmm_solver = epaswmm.solver.Solver(inp_file=inpfile)
-            swmm_solver.execute()
-            results_swmm = swntr.io.read_outfile(outfile)
+            print("   run swmm direct")
+            if isfile(temp_rptfile):
+                os.remove(temp_rptfile)
+            if isfile(temp_outfile):
+                os.remove(temp_outfile)
+            with Solver(inpfile, temp_rptfile, temp_outfile) as s:
+                while s.state == EngineState.RUNNING:
+                    if s.step() != 0:
+                        break       # non-zero return = engine error
+            results_swmm = swntr.io.read_outfile(temp_outfile)
             
-            # swntr, model sections are flagged for rewrite
-            print("   run swntr")
-            if isfile(temp_inpfile):
-                os.remove(temp_inpfile)
+            # WNTR-Storm, model sections are flagged for rewrite
+            print("   run WNTR-Storm")
+            if isfile(temp_rptfile):
+                os.remove(temp_rptfile)
             if isfile(temp_outfile):
                 os.remove(temp_outfile)
             swn = swntr.network.StormWaterNetworkModel(inpfile)
@@ -213,11 +217,11 @@ class TestStormWaterSim(unittest.TestCase):
             for sec in results_swntr.report.keys():
                 self.tested_rpt_sections.add(sec)
             
-            # Compare direct methods to swmmio and swntr, node total inflow
+            # Compare direct methods to swmmio and WNTR-Storm, node total inflow
             assert_frame_equal(results_swmm.node['TOTAL_INFLOW'],
                                results_swntr.node['TOTAL_INFLOW'])
             
-            # Compare direct methods to swmmio and swntr, link capacity
+            # Compare direct methods to swmmio and WNTR-Storm, link capacity
             assert_frame_equal(results_swmm.link['CAPACITY'],
                                results_swntr.link['CAPACITY'])
 
@@ -256,19 +260,20 @@ class TestStormWaterScenarios(unittest.TestCase):
         sim = swntr.sim.SWMMSimulator(swn1) 
         results_swntr = sim.run_sim()
         
-        average_flow_rate = results_swntr.link['FLOW_RATE'].loc[:, conduit_name].mean()
+        average_flow_rate = results_swntr.link['FLOW'].loc[:, conduit_name].mean()
         self.assertAlmostEqual(average_flow_rate, max_flow1, 4)
 
     def test_pump_outage(self):
         pump_name = 'PUMP1'
-        start_time = 4.5
-        end_time = 12
+        start_time = 4.5 # hours
+        end_time = 12 # hours
 
         inpfile = join(ex_datadir, "Pump_Control_Model.inp")
         swn1 = swntr.network.StormWaterNetworkModel(inpfile)
         assert swn1.controls.shape[0] == 2
         swn1.add_pump_outage_control(pump_name, start_time, end_time) # Outage times in decimal hours
         assert swn1.controls.shape[0] == 3
+        print(swn1.controls)
         
         # Test ability to modify INP file
         inpfile = join(testdir, "temp_Pump_Control_Model.inp")
@@ -279,17 +284,17 @@ class TestStormWaterScenarios(unittest.TestCase):
         assert control_name in swn2.controls.index
 
         # Test simulation results
-        sim = swntr.sim.SWMMSimulator(swn1) 
+        sim = swntr.sim.SWMMSimulator(swn2) 
         results_swntr = sim.run_sim()
         
         # Pump flowrate over the entire simulation is not 0
-        flow_rate = results_swntr.link['FLOW_RATE'].loc[:, pump_name]
+        flow_rate = results_swntr.link['FLOW'].loc[:, pump_name]
         assert flow_rate.mean() != 0
         
         # Pump flowrate during the outage is 0
         start_datetime = flow_rate.index[0] + + pd.Timedelta(str(start_time) + " hours")
         end_datetime = flow_rate.index[0] + + pd.Timedelta(str(end_time-0.001) + " hours")
-        flow_rate_outage = results_swntr.link['FLOW_RATE'].loc[start_datetime:end_datetime, pump_name]
+        flow_rate_outage = results_swntr.link['FLOW'].loc[start_datetime:end_datetime, pump_name]
         self.assertAlmostEqual(flow_rate_outage.mean(), 0, 4)
 
 
@@ -304,7 +309,7 @@ class TestStormWaterMetrics(unittest.TestCase):
         self.swn = swntr.network.StormWaterNetworkModel(inpfile)
         sim = swntr.sim.SWMMSimulator(self.swn) 
         self.results = sim.run_sim()
-        flowrate = self.results.link['FLOW_RATE'].mean()
+        flowrate = self.results.link['FLOW'].mean()
         self.G = self.swn.to_graph(link_weight=flowrate, modify_direction=True)
         
     @classmethod
@@ -355,8 +360,8 @@ class TestStormWaterMetrics(unittest.TestCase):
         sim = swntr.sim.SWMMSimulator(swn) 
         results = sim.run_sim()
         
-        pump_flowrate = results.link['FLOW_RATE'].loc[:, swn.pump_name_list]
-        head = results.node['HYDRAULIC_HEAD']
+        pump_flowrate = results.link['FLOW'].loc[:, swn.pump_name_list]
+        head = results.node['HEAD']
 
         pump_headloss = swntr.metrics.headloss(head, swn, swn.pump_name_list)
         pump_power = swntr.metrics.pump_power(pump_flowrate, pump_headloss, flow_units)
@@ -393,7 +398,7 @@ class TestStormWaterMetrics(unittest.TestCase):
     def test_conduit_travel_time(self):
         # Network values
         length = self.swn.conduits['Length']
-        velocity = self.results.link['FLOW_VELOCITY']
+        velocity = self.results.link['VELOCITY']
         
         travel_time = swntr.metrics.conduit_travel_time(length, velocity)
         
@@ -441,7 +446,7 @@ class TestStormWaterMetrics(unittest.TestCase):
         volume = swn.conduit_volume
         flow_units = swn.options.loc['FLOW_UNITS', 'Value']
 
-        flowrate = results.link['FLOW_RATE'].mean()
+        flowrate = results.link['FLOW'].mean()
         capacity = results.link['CAPACITY'].mean()
         available_volume = swntr.metrics.conduit_available_volume(volume, capacity)
         time_to_capacity = swntr.metrics.conduit_time_to_capacity(available_volume, flowrate, flow_units)
@@ -454,6 +459,7 @@ class TestStormWaterMetrics(unittest.TestCase):
         # Shortest path metrics
         total_length = length[edge_list].sum()
         total_volume = volume[edge_list].sum()
+        total_capacity = capacity[edge_list].sum()
         total_available_volume = available_volume[edge_list].sum()
         
         time_to_capacity = time_to_capacity[edge_list]
@@ -464,8 +470,9 @@ class TestStormWaterMetrics(unittest.TestCase):
 
         self.assertAlmostEqual(total_length, 435.0, 1)
         self.assertAlmostEqual(total_volume, 9074.0, 1)
-        self.assertAlmostEqual(total_available_volume, 8958.8, 1)
-        self.assertAlmostEqual(total_time_to_capacity, 7675.9, 1)
+        self.assertAlmostEqual(total_capacity, 0.03787, 4)
+        self.assertAlmostEqual(total_available_volume, 8969.5, 1)
+        self.assertAlmostEqual(total_time_to_capacity, 7814.6, 1)
 
     
 @unittest.skipIf(not has_swmm,

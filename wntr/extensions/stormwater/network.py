@@ -66,7 +66,8 @@ class StormWaterNetworkModel(object):
         # Nodes = Junctions, outfall, and storage nodes
         # Links = Conduits, weirs, orifices, and pumps
         
-        # Sections that are commented out are not currently supported by swntr
+        # Sections that are commented out are not currently supported by 
+        # the stormwater extension of WNTR
         
         self.section_names = [
             # Options

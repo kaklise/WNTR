@@ -19,7 +19,7 @@
     ... except:
     ...    swnP = swntr.network.StormWaterNetworkModel('../examples/networks/Pump_Control_Model.inp')
     >>> try:
-    ...    backdrop_img = plt.imread('../../extensions/figures/stormwater_Site-Post.jpg')
+    ...    backdrop_img = plt.imread('../../documentation/extensions/figures/stormwater_Site-Post.jpg')
     ... except:
     ...    backdrop_img = plt.imread('../documentation/extensions/figures/stormwater_Site-Post.jpg')
 
@@ -40,33 +40,33 @@ Overview
 
 The following section describes a WNTR extension that helps
 quantify the resilience of stormwater and wastewater systems.  
-This capability resides in the :class:`~wntr.extensions.stormwater` subpackage of WNTR and 
-is referred to as S-WNTR (pronounced "S-winter").
-**S-WNTR is intended to 
+This capability resides in the :class:`~wntr.extensions.stormwater` extension of WNTR and 
+is referred to as WNTR-Storm.
+**WNTR-Storm is intended to 
 leverage existing stormwater and wastewater software within a framework that 
 facilitates the use of WNTR capabilities for resilience analysis.**
-For that reason, some familiarity with WNTR is recommended before using S-WNTR.
+For that reason, some familiarity with WNTR is recommended before using WNTR-Storm.
 Core functionality in WNTR is cross referenced in 
 the documentation below to provide additional background.
 
-S-WNTR uses the following software packages to run `EPA's 
+WNTR-Storm uses the following software packages to run `EPA's 
 Storm Water Management Model (SWMM) <https://www.epa.gov/water-research/storm-water-management-model-swmm>`_ :cite:p:`ross22`:
 
-* **epaswmm** :cite:p:`ross22`: used to run SWMM hydraulic simulations and read OUT files, https://github.com/USEPA/Stormwater-Management-Model
+* **openswmm.engine** :cite:p:`openswmm`: used to run SWMM hydraulic simulations and read OUT files, https://github.com/HydroCouple/openswmm.engine
 * **swmmio** :cite:p:`swmmio`: used to read and write SWMM INP files and read RPT files, https://github.com/pyswmm/swmmio
 
 A subset of WNTR classes/methods/functions that were developed for drinking water 
-resilience analysis are imported into the stormwater subpackage to provide capabilities for 
+resilience analysis are imported into the stormwater extension to provide capabilities for 
 stormwater and wastewater resilience analysis.
 
-S-WNTR is intended to be used a standalone package.
-In the examples below, the stormwater subpackage is imported as "swntr".
+WNTR-Storm is intended to be used a standalone package.
+In the examples below, the stormwater extension is imported as "swntr".
 
 .. doctest::
 
     >>> import wntr.extensions.stormwater as swntr
 
-S-WNTR includes the following modules:
+WNTR-Storm includes the following modules:
 
 .. _table-wntr-stormwater-modules:
 .. table:: WNTR Stormwater Modules
@@ -86,9 +86,7 @@ S-WNTR includes the following modules:
 Installation
 ------------
 
-Follow WNTR's :ref:`installation` instructions to install S-WNTR.  
-
-S-WNTR requires the following dependencies (included in the `requirements file <https://github.com/usepa/WNTR/blob/main/requirements.txt>`_):
+WNTR-Storm requires the following dependencies, which are included as DEPENDENCIES and EXTRAS (optional and stormwater) in the setup.py file.
 
 * numpy
 * scipy
@@ -97,14 +95,18 @@ S-WNTR requires the following dependencies (included in the `requirements file <
 * matplotlib
 * setuptools
 * geopandas
-* epaswmm
+* openswmm.engine
 * swmmio
+
+To install WNTR-Storm, use the following command::
+
+    pip install wntr[optional,stormwater]
 
 Units
 -----
 
 While WNTR uses SI units for all drinking water models and analysis (see :ref:`units`), 
-**stormwater and wastewater models are not converted to SI units** when loaded into S-WNTR.
+**stormwater and wastewater models are not converted to SI units** when loaded into WNTR-Storm.
 Therefore, any additional data used in analysis or computation should adhere the units of the model.
 
 .. dropdown:: **SWMM unit conventions**
@@ -171,7 +173,7 @@ The model is stored in a
 	* ``swn.options``
 	* ``swn.report``
 
-	A full list of SWMM INP file sections that are supported by S-WNTR are stored in ``swn.section_names``.
+	A full list of SWMM INP file sections that are supported by WNTR-Storm are stored in ``swn.section_names``.
 		
 	Model attributes are stored in Pandas DataFrames or Series.
 	For example, ``swn.junctions`` contains the following information:
@@ -243,7 +245,7 @@ The model is stored in a
 
 .. dropdown:: **Model I/O**
 
-	S-WNTR includes the following functions to read/write files and transform 
+	WNTR-Storm includes the following functions to read/write files and transform 
 	the StormWaterNetworkModel to other data formats.
 
 	* :class:`~wntr.extensions.stormwater.io.read_inpfile`: Create a StormWaterNetworkModel object from a SWMM INP file 
@@ -285,7 +287,7 @@ Pandas DataFrames, as described in the following section.
 	and PCSWMM :cite:p:`pcswmm` are able to generate 2D overland 
 	meshes that can be stored in SWMM INP files and run using SWMM.
 
-	To include overland flow in S-WNTR, 
+	To include overland flow in WNTR-Storm, 
 	the user should first modify their INP file to include 2D overland conduits.
 
 .. dropdown:: **Simulation results**
@@ -297,98 +299,101 @@ Pandas DataFrames, as described in the following section.
 	simulation results or summary information.
 	See WNTR documentation on :ref:`simulation_results` for more information on the format of simulation results in WNTR.
 
-	The S-WNTR :class:`~wntr.extensions.stormwater.sim.ResultsObject` includes the following sections and attributes 
+	The WNTR-Storm :class:`~wntr.extensions.stormwater.sim.ResultsObject` includes the following sections and attributes 
 	(Note that attribute names use all caps with an underscore between words):
 	
 	**results.node** includes the following timeseries for junctions, outfall, and storage nodes from the OUT file:
 
-	* Invert depth
-	* Hydraulic head
-	* Stored volume
-	* Lateral inflow
-	* Total inflow
-	* Flooding loss
-	* Pollutant concentration
+	* DEPTH – Water depth.
+	* HEAD – Hydraulic head.
+	* VOLUME – Stored volume.
+	* LATERAL_INFLOW – Lateral inflow rate.
+	* TOTAL_INFLOW – Total inflow rate.
+	* OVERFLOW – Overflow / flooding rate.
+	* POLLUT_BASE – Base index for pollutant concentrations.
 	
 	.. doctest::
 	
 		>>> print(results.node.keys())
-		dict_keys(['INVERT_DEPTH', 'HYDRAULIC_HEAD', 'STORED_VOLUME', 'LATERAL_INFLOW', 'TOTAL_INFLOW', 'FLOODING_LOSSES', 'POLLUTANT_CONCENTRATION'])
+		dict_keys(['DEPTH', 'HEAD', 'VOLUME', 'LATERAL_INFLOW', 'TOTAL_INFLOW', 'OVERFLOW', 'POLLUT_BASE'])
     
 	**results.link** results include the following timeseries for conduits, weirs, orifices, and pumps from the OUT file:
 
-	* Flow rate
-	* Flow depth
-	* Flow velocity
-	* Flow volume
-	* Capacity
-	* Pollutant concentration
+	* FLOW – Flow rate.
+	* DEPTH – Water depth.
+	* VELOCITY – Flow velocity.
+	* VOLUME – Stored volume.
+	* CAPACITY – Capacity fraction (flow / full flow).
+	* POLLUT_BASE – Base index for pollutant concentrations.
 	   
 	.. doctest::
 	
 		>>> print(results.link.keys())
-		dict_keys(['FLOW_RATE', 'FLOW_DEPTH', 'FLOW_VELOCITY', 'FLOW_VOLUME', 'CAPACITY', 'POLLUTANT_CONCENTRATION'])
+		dict_keys(['FLOW', 'DEPTH', 'VELOCITY', 'VOLUME', 'CAPACITY', 'POLLUT_BASE'])
         
 	**results.subcatchment** results include the following timeseries from the OUT file:
 
-	* Rainfall
-	* Snow depth
-	* Evaporation loss
-	* Infiltration loss
-	* Runoff rate
-	* Groundwater outflow rate
-	* Groundwater table elevation
-	* Soil moisture
-	* Pollutant concentration
+	* RAINFALL – Rainfall rate.
+	* SNOW_DEPTH – Snow depth.
+	* EVAP – Evaporation rate.
+	* INFIL – Infiltration rate.
+	* RUNOFF – Runoff rate.
+	* GW_FLOW – Groundwater outflow rate.
+	* GW_ELEV – Groundwater table elevation.
+	* SOIL_MOIST – Soil moisture fraction.
+	* POLLUT_BASE – Base index for pollutant concentrations.
 	
 	.. doctest::
 	
 		>>> print(results.subcatchment.keys())
-		dict_keys(['RAINFALL', 'SNOW_DEPTH', 'EVAPORATION_LOSS', 'INFILTRATION_LOSS', 'RUNOFF_RATE', 'GROUNDWATER_OUTFLOW', 'GROUNDWATER_TABLE_ELEVATION', 'SOIL_MOISTURE', 'POLLUTANT_CONCENTRATION'])
+		dict_keys(['RAINFALL', 'SNOW_DEPTH', 'EVAP', 'INFIL', 'RUNOFF', 'GW_FLOW', 'GW_ELEV', 'SOIL_MOIST', 'POLLUT_BASE'])
 	
 	**results.system** results include the following timeseries from the OUT file:
 	
-	* Air temperature
-	* Rainfall
-	* Snow depth
-	* Evaporative infiltration loss
-	* Runoff flow
-	* Dry weather inflow
-	* Groundwater inflow
-	* Rain derived infiltration and inflow (RDII) inflow
-	* Direct inflow
-	* Total lateral inflow
-	* Flood losses
-	* Outfall flows
-	* Volume stored
-	* Evaporation rate 
-    
+	* TEMPERATURE – Air temperature.
+	* RAINFALL – System-wide rainfall rate.
+	* SNOW_DEPTH – Average snow depth.
+	* EVAP – System-wide evaporation rate.
+	* INFIL – System-wide infiltration rate.
+	* RUNOFF – System-wide runoff rate.
+	* DW_INFLOW – Dry-weather inflow rate.
+	* GW_INFLOW – Groundwater inflow rate.
+	* LAT_INFLOW – Total lateral inflow rate.
+	* FLOODING – Total flooding rate.
+	* OUTFLOW – Total outfall outflow rate.
+	* STORAGE – Total network storage volume.
+	* EVAP_TOTAL – Actual evaporation rate.
+	* PET – Potential evapotranspiration rate.
+	
 	.. doctest::
 	
 		>>> print(results.system.keys())
-		dict_keys(['AIR_TEMP', 'RAINFALL', 'SNOW_DEPTH', 'EVAP_INFIL_LOSS', 'RUNOFF_FLOW', 'DRY_WEATHER_INFLOW', 'GROUNDWATER_INFLOW', 'RDII_INFLOW', 'DIRECT_INFLOW', 'TOTAL_LATERAL_INFLOW', 'FLOOD_LOSSES', 'OUTFALL_FLOWS', 'VOLUME_STORED', 'EVAPORATION_RATE'])
-		
+		dict_keys(['TEMPERATURE', 'RAINFALL', 'SNOW_DEPTH', 'EVAP', 'INFIL', 'RUNOFF', 'DW_INFLOW', 'GW_INFLOW', 'LAT_INFLOW', 'FLOODING', 'OUTFLOW', 'STORAGE', 'EVAP_TOTAL', 'PET'])
+	
 	**results.report** results include the following information from the RPT file (Note, contents depend on the model):
 	
-	* Node summary
-	* Node depth summary
-	* Node inflow summary
-	* Node surcharge summary
-	* Node flooding summary
-	* Storage volume summary
-	* Link summary
-	* Link flow summary
-	* Link pollutant load summary
-	* Conduit surcharge summary
-	* Pumping summary
-	* Subcatchment summary
-	* Subcatchment runoff summary
-	* Subcatchment washoff summary
+	* CONDUIT_SURCHARGE_SUMMARY - Conduit surcharge summary
+	* LINK_SUMMARY - Link summary
+	* LINK_FLOW_SUMMARY - Link flow summary
+	* LINK_POLLUTANT_LOAD_SUMMARY - Link pollutant load summary
+	* NODE_SUMMARY - Node summary
+	* NODE_DEPTH_SUMMARY - Node depth summary
+	* NODE_INFLOW_SUMMARY -Node inflow summary
+	* NODE_SURCHARGE_SUMMARY - Node surcharge summary
+	* NODE_FLOODING_SUMMARY - Node flooding summary
+	* PUMPING_SUMMARY - Pumping summary
+	* STORAGE_VOLUME_SUMMARY - Storage volume summary
+	* SUBCATCHMENT_SUMMARY - Subcatchment summary
+	* SUBCATCHMENT_RUNOFF_SUMMARY - Subcatchment runoff summary
+	* SUBCATCHMENT_WASHOFF_SUMMARY - Subcatchment washoff summary
+
+subcatchment_summary
+Return values for the Subcatchment Summary description
 
 	.. doctest::
 	
 		>>> print(results.report.keys())
-		dict_keys(['NODE_DEPTH_SUMMARY', 'NODE_INFLOW_SUMMARY', 'STORAGE_VOLUME_SUMMARY', 'LINK_FLOW_SUMMARY', 'PUMPING_SUMMARY'])
+		dict_keys(['SUBCATCHMENT_WASHOFF_SUMMARY', 'NODE_DEPTH_SUMMARY', 'NODE_INFLOW_SUMMARY', 'NODE_SURCHARGE_SUMMARY', 'LINK_FLOW_SUMMARY', 'CONDUIT_SURCHARGE_SUMMARY', 'LINK_POLLUTANT_LOAD_SUMMARY'])
 
 	The following example extracts the 'C0' conduit capacity from simulation results.
 
@@ -513,7 +518,7 @@ where the impact of individual component failures is evaluated.
 	* Social vulnerability data
 	* Location of critical facilities and emergency services
 
-	S-WNTR includes a :class:`~wntr.extensions.stormwater.gis` module which 
+	WNTR-Storm includes a :class:`~wntr.extensions.stormwater.gis` module which 
 	facilitates the use of GIS data in geospatial operations, like 
 	:class:`~wntr.extensions.stormwater.gis.snap` and :class:`~wntr.extensions.stormwater.gis.intersect`.
 
@@ -575,11 +580,11 @@ where the impact of individual component failures is evaluated.
 		...     # Run simulation and save results
 		...     sim = swntr.sim.SWMMSimulator(swn)
 		...     results = sim.run_sim(name)
-		...     flow_velocity[name] = results.link['FLOW_VELOCITY'].mean(axis=1)
+		...     flow_velocity[name] = results.link['VELOCITY'].mean(axis=1)
 		...     # Reset max flow (0 = unconstrained)
 		...     swn.conduits.loc[name, "MaxFlow"] = 0
 		
-		>>> pd.DataFrame(flow_velocity).plot()
+		>>> ax = pd.DataFrame(flow_velocity).plot()
 
 	.. doctest::
 	    :hide:
@@ -655,7 +660,7 @@ Additional metrics could also be added at a later date.
 	
 	.. doctest::
 		
-		>>> average_flowrate = results.link['FLOW_RATE'].mean()
+		>>> average_flowrate = results.link['FLOW'].mean()
 		>>> G_flow = swn.to_graph(link_weight=average_flowrate, modify_direction=True)
 		>>> upstream_edges = swntr.metrics.upstream_edges(G_flow, 'J8')
 
@@ -666,7 +671,7 @@ Additional metrics could also be added at a later date.
 	.. doctest::
 		
 		>>> length = length = swn.links['Length']
-		>>> average_velocity = results.link['FLOW_VELOCITY'].mean()
+		>>> average_velocity = results.link['VELOCITY'].mean()
 		>>> travel_time = swntr.metrics.conduit_travel_time(length, average_velocity) # in seconds
 
 	If velocites are stable, the travel time along a path can be computed as the sum of travel times along that path.
@@ -712,8 +717,8 @@ Additional metrics could also be added at a later date.
 		>>> sim = swntr.sim.SWMMSimulator(swnP)
 		>>> results = sim.run_sim()
 		
-		>>> pump_flowrate = results.link['FLOW_RATE'].loc[:, swn.pump_name_list]
-		>>> node_head = results.node['HYDRAULIC_HEAD']
+		>>> pump_flowrate = results.link['FLOW'].loc[:, swn.pump_name_list]
+		>>> node_head = results.node['HEAD']
 		>>> pump_headloss = swntr.metrics.headloss(node_head, swn, swn.pump_name_list)
 		>>> pump_power = swntr.metrics.pump_power(pump_flowrate, pump_headloss, flow_units)
 		>>> pump_energy = swntr.metrics.pump_energy(pump_flowrate, pump_headloss, flow_units)
