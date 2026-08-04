@@ -3,6 +3,7 @@ The wntr.stormwater.sim module includes methods to simulate
 hydraulics.
 """
 import os
+import pandas as pd
 
 try:
     from openswmm.engine import Solver, EngineState
@@ -11,7 +12,7 @@ except ModuleNotFoundError:
     has_swmm = False
 
 from wntr.sim import SimulationResults
-from wntr.extensions.stormwater.io import write_inpfile, read_outfile, read_rptfile
+from wntr.extensions.stormwater.io import write_inpfile, read_outfile, read_rptfile, _extract_summary
 
 class SWMMSimulator(object):
     """
@@ -53,20 +54,19 @@ class SWMMSimulator(object):
             os.remove(temp_rptfile)
 
         write_inpfile(self._swn, temp_inpfile)
-        
-        #swmm_solver = epaswmm.solver.Solver(inp_file=temp_inpfile)
-        #swmm_solver.execute()
-        
+
         with Solver(temp_inpfile, temp_rptfile, temp_outfile) as s:
             while s.state == EngineState.RUNNING:
-                if s.step() != 0:
-                    break    
-
+                for _ in s.steps():
+                    pass
+            stats_report = _extract_summary(s)
+        
         if full_results:
             results = read_outfile(temp_outfile)
         else:
             results = SimulationResults()
         
-        results.report = read_rptfile(temp_rptfile)
+        #results.report = read_rptfile(temp_rptfile)
+        results.report = stats_report
         
         return results

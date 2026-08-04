@@ -118,29 +118,7 @@ class StormWaterNetworkGIS:
             geom[subcatch_name] = Polygon(vertices)
         geom = pd.Series(geom)    
         self.subcatchments = gpd.GeoDataFrame(swn.subcatchments, geometry=geom, crs=crs)
-        """ 
-        import swmmio
-        # create gis from an updated swmmio model
-        # This is very slow for large models
-        # Models without certain features (subcatchments) fail
-        filename = 'temp.inp'
-        swn._swmmio_model.inp.save(filename)
-        m = swmmio.Model(filename)
-        
-        self.junctions = m.nodes.geodataframe.loc[swn.junction_name_list,:]
-        self.outfalls = m.nodes.geodataframe.loc[swn.outfall_name_list,:]
-        self.storage = m.nodes.geodataframe.loc[swn.storage_name_list,:]
-        
-        self.conduits = m.links.geodataframe.loc[swn.conduit_name_list,:]
-        self.weirs = m.links.geodataframe.loc[swn.weir_name_list,:]
-        self.orifices = m.links.geodataframe.loc[swn.orifice_name_list,:]
-        self.pumps = m.links.geodataframe.loc[swn.pump_name_list,:]
-        
-        self.subcatchments = m.subcatchments.geodataframe
 
-        if crs is not None:
-            self.set_crs(crs, allow_override=True)
-        """
     def _create_swn(self, append=None):
         raise NotImplementedError
     

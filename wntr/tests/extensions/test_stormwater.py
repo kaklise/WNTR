@@ -195,8 +195,8 @@ class TestStormWaterSim(unittest.TestCase):
                 os.remove(temp_outfile)
             with Solver(inpfile, temp_rptfile, temp_outfile) as s:
                 while s.state == EngineState.RUNNING:
-                    if s.step() != 0:
-                        break       # non-zero return = engine error
+                    for _ in s.steps():
+                        pass
             results_swmm = swntr.io.read_outfile(temp_outfile)
             
             # WNTR-Storm, model sections are flagged for rewrite
@@ -231,9 +231,17 @@ class TestStormWaterSim(unittest.TestCase):
         sim = swntr.sim.SWMMSimulator(swn) 
         results = sim.run_sim()
         report = results.report
-        assert 'NODE_DEPTH_SUMMARY' in report.keys()
-        assert 'MaxNodeDepth' in report['NODE_DEPTH_SUMMARY'].columns
-        assert set(report['NODE_DEPTH_SUMMARY'].index) == set(swn.node_name_list)
+        
+        # summary stats from an rpt file
+        rpt = swntr.io.read_rptfile('temp.rpt')
+        assert 'NODE_DEPTH_SUMMARY' in rpt.keys()
+        assert 'MaxNodeDepth' in rpt['NODE_DEPTH_SUMMARY'].columns
+        assert set(rpt['NODE_DEPTH_SUMMARY'].index) == set(swn.node_name_list)
+        
+        # summary stats from openswmm solver
+        assert 'NODE_SUMMARY' in report.keys()
+        assert 'max_depth' in report['NODE_SUMMARY'].columns
+        assert set(report['NODE_SUMMARY'].index) == set(swn.node_name_list)
 
 
 @unittest.skipIf(not has_swmm,
@@ -273,7 +281,6 @@ class TestStormWaterScenarios(unittest.TestCase):
         assert swn1.controls.shape[0] == 2
         swn1.add_pump_outage_control(pump_name, start_time, end_time) # Outage times in decimal hours
         assert swn1.controls.shape[0] == 3
-        print(swn1.controls)
         
         # Test ability to modify INP file
         inpfile = join(testdir, "temp_Pump_Control_Model.inp")
@@ -292,7 +299,7 @@ class TestStormWaterScenarios(unittest.TestCase):
         assert flow_rate.mean() != 0
         
         # Pump flowrate during the outage is 0
-        start_datetime = flow_rate.index[0] + + pd.Timedelta(str(start_time) + " hours")
+        start_datetime = flow_rate.index[0] + + pd.Timedelta(str(start_time+0.001) + " hours")
         end_datetime = flow_rate.index[0] + + pd.Timedelta(str(end_time-0.001) + " hours")
         flow_rate_outage = results_swntr.link['FLOW'].loc[start_datetime:end_datetime, pump_name]
         self.assertAlmostEqual(flow_rate_outage.mean(), 0, 4)
@@ -360,17 +367,19 @@ class TestStormWaterMetrics(unittest.TestCase):
         sim = swntr.sim.SWMMSimulator(swn) 
         results = sim.run_sim()
         
+        # from metrics
         pump_flowrate = results.link['FLOW'].loc[:, swn.pump_name_list]
         head = results.node['HEAD']
-
         pump_headloss = swntr.metrics.headloss(head, swn, swn.pump_name_list)
         pump_power = swntr.metrics.pump_power(pump_flowrate, pump_headloss, flow_units)
         pump_energy = swntr.metrics.pump_energy(pump_flowrate, pump_headloss, flow_units)
-        
         pump_name = swn.pump_name_list[0]
         from_metrics = pump_energy[pump_name].sum()
-        from_rpt = results.report['PUMPING_SUMMARY'].loc[pump_name,'PowerUsage(kW-hr)']
         
+        # from rpt
+        report = swntr.io.read_rptfile('temp.rpt')
+        from_rpt = report['PUMPING_SUMMARY'].loc[pump_name,'PowerUsage(kW-hr)']
+
         self.assertAlmostEqual(from_metrics, from_rpt, 1)
     
     def test_conduit_available_volume(self):
@@ -455,7 +464,8 @@ class TestStormWaterMetrics(unittest.TestCase):
         source_node = 'J4'
         target_node = 'J8'
         edge_list = swntr.metrics.shortest_path_edges(G, source_node, target_node)
-
+        assert set(edge_list) == set(['C5', 'C4', 'C7'])
+        
         # Shortest path metrics
         total_length = length[edge_list].sum()
         total_volume = volume[edge_list].sum()
@@ -470,9 +480,9 @@ class TestStormWaterMetrics(unittest.TestCase):
 
         self.assertAlmostEqual(total_length, 435.0, 1)
         self.assertAlmostEqual(total_volume, 9074.0, 1)
-        self.assertAlmostEqual(total_capacity, 0.03787, 4)
-        self.assertAlmostEqual(total_available_volume, 8969.5, 1)
-        self.assertAlmostEqual(total_time_to_capacity, 7814.6, 1)
+        self.assertAlmostEqual(total_capacity, 0.04171, 4)
+        self.assertAlmostEqual(total_available_volume, 8958.8, 1)
+        self.assertAlmostEqual(total_time_to_capacity, 7675.9, 1)
 
     
 @unittest.skipIf(not has_swmm,

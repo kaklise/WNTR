@@ -143,6 +143,41 @@ def read_inpfile(filename):
 
     return swn
 
+def _extract_summary(solver):
+    
+    stats = solver.statistics
+    attrs = [attr for attr in dir(stats) if not attr.startswith('_') and not '_at' in attr]
+    node_stats = {}
+    link_stats = {}
+    subcatchment_stats = {}
+
+    for attr in attrs:
+        try:
+            vals = getattr(stats, attr)
+        except:
+            continue
+        if 'node' in attr:
+            attr = attr.strip('node_')
+            node_stats[attr] = vals
+        elif 'link' in attr:
+            attr = attr.strip('link_')
+            link_stats[attr] = vals
+        elif 'subcatchment' in attr:
+            attr = attr.strip('subcatchment_')
+            subcatchment_stats[attr] = vals
+        else:
+            return
+    
+    report = {}
+    if len(solver.nodes) > 0:
+        report['NODE_SUMMARY'] = pd.DataFrame(node_stats, solver.nodes.ids)
+    if len(solver.links) > 0:
+        report['LINK_SUMMARY'] = pd.DataFrame(link_stats, solver.links.ids)
+    if len(solver.subcatchments) > 0:
+        report['SUBCATCHMENT_SUMMARY'] = pd.DataFrame(subcatchment_stats, solver.subcatchments.ids)
+    
+    return report
+
 def read_rptfile(filename):
     """
     Read a SWMM summary report file
@@ -221,26 +256,25 @@ def read_outfile(filename):
     
     with OutputReader(filename) as out:
         
-        T = out.get_period_count()
-        N = out.get_node_count()
-        L = out.get_link_count()
-        S = out.get_subcatch_count()
+        T = out.period_count
+        N = out.node_count
+        L = out.link_count
+        S = out.subcatchment_count
         
-        node_name_list = [out.get_node_id(i) for i in range(N)]
-        link_name_list = [out.get_link_id(i) for i in range(L)]
-        subcatchment_name_list = [out.get_subcatch_id(i) for i in range(S)]
+        node_name_list = out.node_ids
+        link_name_list = out.link_ids
+        subcatchment_name_list = out.subcatchment_ids
         
-        start_date = out.get_start_date() # start date as a Julian date value
-        report_step = out.get_report_step() # time step in seconds
-        timesteps = [i*report_step for i in range(T)]
-        timesteps = pd.to_datetime(timesteps, unit='s')
+        #start_date = out.start_datetime # start date as a Julian date value
+        #report_step = out.report_step.seconds # time step in seconds
+        timesteps =  out.period_times
         
         # Node attributes
         for attribute in OutNodeVar:
             temp = np.empty((T, N), dtype=np.float32)
             for t in range(T):
                 try:
-                    temp[t] = out.get_node_result(t, attribute)
+                    temp[t] = out.node_result(t, attribute)
                 except:
                     pass
             df = pd.DataFrame(data=temp, columns=node_name_list, index=timesteps)
@@ -251,7 +285,7 @@ def read_outfile(filename):
             temp = np.empty((T, L), dtype=np.float32)
             for t in range(T):
                 try:
-                    temp[t] = out.get_link_result(t, attribute)
+                    temp[t] = out.link_result(t, attribute)
                 except:
                     pass
             df = pd.DataFrame(data=temp, columns=link_name_list, index=timesteps)
@@ -262,7 +296,7 @@ def read_outfile(filename):
             temp = np.empty((T, S), dtype=np.float32)
             for t in range(T):
                 try:
-                    temp[t] = out.get_subcatch_result(t, attribute)
+                    temp[t] = out.subcatchment_result(t, attribute)
                 except:
                     pass
             df = pd.DataFrame(data=temp, columns=subcatchment_name_list, index=timesteps)
@@ -273,42 +307,11 @@ def read_outfile(filename):
             temp = np.empty((T), dtype=np.float32)
             for t in range(T):
                 try:
-                    temp[t] = out.get_system_result(t, attribute)
+                    temp[t] = out.system_result(t, attribute)
                 except:
                     pass
             df = pd.Series(data=temp, index=timesteps)
             results.system[attribute.name] = df
-
-
-    # swmm_output = epaswmm.output.Output(output_file=filename)
-    # times = swmm_output.times
-    
-    # for attribute in epaswmm.output.NodeAttribute:
-    #     temp = {}
-    #     for name in swmm_output.get_element_names(element_type=epaswmm.output.ElementType.NODE):
-    #         ts = swmm_output.get_node_timeseries(element_index=name, attribute=attribute)
-    #         temp[name] = ts.values()
-    #     results.node[attribute.name] = pd.DataFrame(data=temp, index=times)
-        
-    # for attribute in epaswmm.output.LinkAttribute:
-    #     temp = {}
-    #     for name in swmm_output.get_element_names(element_type=epaswmm.output.ElementType.LINK):
-    #         ts = swmm_output.get_link_timeseries(element_index=name, attribute=attribute)
-    #         temp[name] = ts.values()
-    #     results.link[attribute.name] = pd.DataFrame(data=temp, index=times)
-        
-    # for attribute in epaswmm.output.SubcatchAttribute:
-    #     temp = {}
-    #     for name in swmm_output.get_element_names(element_type=epaswmm.output.ElementType.SUBCATCHMENT):
-    #         ts = swmm_output.get_subcatchment_timeseries(element_index=name, attribute=attribute)
-    #         temp[name] = ts.values()
-    #     results.subcatchment[attribute.name] = pd.DataFrame(data=temp, index=times)
-    
-    # #temp = {}
-    # for attribute in epaswmm.output.SystemAttribute:
-    #     ts = swmm_output.get_system_timeseries(attribute=attribute)
-    #     #temp[attribute.name] = ts.values()
-    #     results.system[attribute.name] = pd.Series(data=ts.values(), index=times)
 
     return results
 
