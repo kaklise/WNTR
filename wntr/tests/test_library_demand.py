@@ -65,7 +65,7 @@ class TestDemandPatternLibrary(unittest.TestCase):
         self.DPL.add_combined_pattern('Combined_pulse', 
                                       ['Pulse', 'Pulse_invert'], 
                                       combine='Overlap', 
-                                      weights=None, 
+                                      weights=[0.5, 0.5], 
                                       durations=[7*24*3600], 
                                       pattern_timestep=3600, 
                                       start_clocktime=0,
@@ -73,7 +73,7 @@ class TestDemandPatternLibrary(unittest.TestCase):
         combined_pulse = self.DPL.to_Series('Combined_pulse')
         #self.DPL.plot_patterns(names=['Pulse', 'Pulse_invert', 'Combined_pulse'])
         
-        assert combined_pulse.mean() == 1
+        assert combined_pulse.mean() == 0.5
         assert combined_pulse.std() == 0
     
     def test_binary_pattern(self):
@@ -116,7 +116,7 @@ class TestDemandPatternLibrary(unittest.TestCase):
         self.DPL.add_combined_pattern('Combined_overlap', 
                                       ['Net1_1', 'Net3_1'], 
                                       combine='Overlap', 
-                                      weights=None, 
+                                      weights=[1,2.5], 
                                       durations=[7*24*3600], 
                                       pattern_timestep=3600, 
                                       start_clocktime=0,
@@ -128,7 +128,7 @@ class TestDemandPatternLibrary(unittest.TestCase):
         combined = self.DPL.to_Pattern('Combined_overlap')
         
         assert len(combined.multipliers) == 168
-        self.assertAlmostEqual(combined.at(24*3600), net1.at(24*3600) + net3.at(24*3600), 3)
+        self.assertAlmostEqual(combined.at(24*3600), net1.at(24*3600) + 2.5*net3.at(24*3600), 3)
         
     def test_add_combined_pattern_sequential(self):
         self.DPL.add_combined_pattern('Combined_sequential', 

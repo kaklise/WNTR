@@ -586,7 +586,7 @@ class DemandPatternLibrary(object):
                 duration = durations[i]   
             else:
                 duration = durations[0]
-            weight = weights[i]
+            weight = np.array(weights[i])
             
             entry = self.get_pattern(n)
             #entry_start_clocktime = entry['start_clocktime']
@@ -595,8 +595,8 @@ class DemandPatternLibrary(object):
     
             index = np.arange(t, t+duration, pattern_timestep)
             values = []
-            for i in index:
-                values.append(pattern.at(i-start_clocktime))
+            for time in index:
+                values.append(pattern.at(time-start_clocktime))
     
             series[n+str(i)] = pd.Series(index=index, data=values*weight)
             
